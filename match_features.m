@@ -32,6 +32,7 @@ distR = min_dist(:,1)./min_dist(:,2);
 
 % check if nearest neighbour above threshold
 distR(distR>0.8) = 0;
+%return indices
 match1 = find(distR);
 match2 = min_dist_ind(distR>0,1);
 match = [match1';match2'];
