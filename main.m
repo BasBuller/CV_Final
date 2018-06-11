@@ -23,7 +23,7 @@ ransac_thresh       = 1e-02;
 own_algorithm       = 0; % use sift feature detection and matching (0) or own algorithm (1)      
 step1               = 0; % Perform feature detection
 step2               = 0; % Perform feature matching
-step3               = 1; % Apply normalized 8-point Ransac to find best matches
+step3               = 0; % Apply normalized 8-point Ransac to find best matches
 plots               = 0; % show example plots
 
 tic
@@ -102,7 +102,7 @@ if(step2)
 
 end
 
-%% Step 3: Apply 8-points RAnsac algorithm
+%% Step 3: Apply 8-points RANSAC algorithm
 
 %load data
 if(step3)
