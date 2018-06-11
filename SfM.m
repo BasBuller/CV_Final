@@ -25,8 +25,6 @@ V3          = V(1:3, :);
 M           = U3 * sqrt(W3);
 S           = sqrt(W3) *  V3;
 
-save('M', 'M');
-
 % resolve affine ambiguity and solve for L
 L0          = pinv(A'*A);
 L           = lsqnonlin(@myfun, L0);

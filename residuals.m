@@ -4,6 +4,7 @@
 %
 % Input:
 %   -   L = the matrix L that will be minimized for Ai*L*Ai' = eye(2)
+%   -   M = movement matrix of the svd decomposition
 %
 % Output:
 %   -   dif= a matrix (n x 4) containing the residuals for the n cameras
@@ -12,12 +13,12 @@
 %   - Bas Buller 4166566
 %   - Rick Feith 4218272
 
-function dif = residuals(L)
+function dif = residuals(L, M)
 
 %load the saved transformation matrix M
-load('M', 'M');
+% load('M', 'M');
 
-%pre-alocate the Dif matrix
+%pre-alocate the dif matrix
 dif = zeros(size(M,1)/2,4);
 
 %compute the residuals
