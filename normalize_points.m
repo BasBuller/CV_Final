@@ -22,9 +22,9 @@ my = 1/max(size(yi)) * sum(yi);
 d = 1/max(size(xi))* sum(sqrt((xi-mx).^2 + (yi-my).^2));
 
 T = [sqrt(2)/d 0 -mx*sqrt(2)/d; 0 sqrt(2)/d -my*sqrt(2)/d; 0 0 1];
-p = T * [xi'; yi'; ones(size(xi'))];
+p = T * [xi; yi; ones(size(xi))];
 
-xn= p(1,:)';
-yn = p(2,:)';
+xn= p(1,:);
+yn = p(2,:);
 
 end

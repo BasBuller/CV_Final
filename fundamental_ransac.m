@@ -35,8 +35,8 @@ for run = 1:N
     end
     Fi = fundamental_matrix(A);              % Initial fundamental matrix
         
-    p1 = [x1';y1';ones(1,length(x1))];
-    p2 = [x2';y2';ones(1,length(x2))];
+    p1 = [x1;y1;ones(1,length(x1))];
+    p2 = [x2;y2;ones(1,length(x2))];
     Fp1 = Fi*p1;
     FTp1 = Fi'*p1;
         
