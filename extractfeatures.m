@@ -25,7 +25,7 @@ sizeIm = size(img);
 Ls = zeros(sizeIm(1),sizeIm(2),loops);
 finalImage = zeros(size(img));
 
-sigmarange = [1.2.^(-4:1:(loops-5))];
+sigmarange = [1.2.^(-4:1:(loops-5))]; % loop 1: 1.2^-4 .... loop n: 1.2^(loop-5). Low sigma values yield more feature points.
 for i = 1:1:loops
     li = zeros(sizeIm);
     sigma = sigmarange(i);
