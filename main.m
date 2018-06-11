@@ -21,14 +21,13 @@ sift_thresh         = 1;
 ransac_iters        = 2000;
 ransac_thresh       = 1e-01;
 
-own_algorithm       = 0; % use sift feature detection and matching (0) or own algorithm (1)      
+own_algorithm       = 0; % Use sift feature detection and matching (0) or own algorithm (1)      
 step1               = 0; % Perform feature detection
 step2               = 0; % Perform feature matching
 step3               = 0; % Apply normalized 8-point Ransac to find best matches
 step4               = 0; % Determine point view matrix
-plots               = 0; % show example plots
-
-tic
+step5               = 1; % 3D coordinates for 3 and 4 consecutive images
+plots               = 0; % Show example plots
 
 
 if(step1)
@@ -235,6 +234,69 @@ if(step4)
         save own_pvm PVM
     else
         save vl_pvm PVM
+    end
+end
+
+
+if(step5)
+%% 3D coordinates for 3 and 4 consecutive images
+    if(own_algorithm)
+        load own_keypoints
+        load own_matches
+        load own_pvm
+    else
+        load vl_keypoints
+        load vl_matches
+        load vl_pvm
+    end
+    
+    % 3D coordinates for 3 consecutive images
+    triple_matches = {19, 1};
+    for i = 1:(size(keypoints, 1) - 2) 
+        % select columns of points visible in 3 images
+        match = PVM(i:(i+2), :);
+        for j = 1:3             % x & y for selected images
+            
+        end
+        
+        % determine 3D coordinates through affine structure from motion
+        coordinates = SfM(keypoints, match);
+        triple_matches(i, 1) = {coordinates};
+    end
+    
+    % 3D coordinates for images 18-19-01, 19-01-02
+    last_rows = [18 19 1; 19 1 2];
+    for i = 1:size(last_rows, 1)
+        match = PVM(last_rows(i), :);
+        coordinates = SfM(keypoints, match);
+        triple_matches(17+i, 1) = {coordinates};
+    end
+    
+    % 3D coordinates for 4 consecutive images
+    quad_matches = {19, 1};
+    for i = 1:(size(keypoints, 1) - 3)
+        % select columns of points visible in 4 images
+        match = PVM(i:(i+3), :);
+        
+        % determine 3D coordinates through affine structure from motion
+        coordinates = SfM(keypoints, match);
+        quad_matches(i, 1) = {coordinates};
+    end
+    
+    % 3D coordinates for images 17-18-19-01, 18-19-01-02, 19-01-02-03
+    last_rows = [17 18 19 1; 18 19 1 2; 19 1 2 3];
+    for i = 1:size(last_rows, 1)
+        match = PVM(last_rows(i), :);
+        coordinates = SfM(keypoints, match);
+        triple_matches(16+i, 1) = {coordinates};
+    end
+    
+    if(own_algorithm)
+        save own_triple_matches triple_matches
+        save own_quad_matches quad_matches
+    else
+        save vl_triple_matches triple_matches
+        save vl_quad_matches quad_matches
     end
 end
 
