@@ -27,7 +27,7 @@ step2               = 0; % Perform feature matching
 step3               = 0; % Apply normalized 8-point Ransac to find best matches
 step4               = 0; % Determine point view matrix
 step5               = 0; % 3D coordinates for 3 and 4 consecutive images
-step6               = 0; % Procrustes analysis
+step6               = 1; % Procrustes analysis
 plots               = 0; % Show example plots
 
 
@@ -260,11 +260,11 @@ if(step5)
     quad_models = SfM(keypoints, PVM, quad_im);
     
     if(own_algorithm)
-        save own_triple_matches triple_models
-        save own_quad_matches quad_models
+        save own_triple_models triple_models
+        save own_quad_models quad_models
     else
-        save vl_triple_matches triple_models
-        save vl_quad_matches quad_models
+        save vl_triple_models triple_models
+        save vl_quad_models quad_models
     end
 end
 
@@ -272,19 +272,20 @@ end
 if(step6)
 %% Procrustes analysis for complete 3D model
     if(own_algorithm)
-        load own_triple_matches
-        load own_quad_matches
+        load own_triple_models
+        load own_quad_models
     else
-        load vl_triple_matches
-        load vl_quad_matches
+        load vl_triple_models
+        load vl_quad_models
     end
     
-    
+    % Complete 3D model
+    comp_model = model_stitching(triple_models, quad_models);
     
     if(own_algorithm)
-        
+        save own_comp_model comp_model
     else
-        
+        save vl_com_model comp_model
     end
 end
 
