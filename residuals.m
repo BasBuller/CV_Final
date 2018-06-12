@@ -16,7 +16,7 @@
 function dif = residuals(L, M)
 
 %load the saved transformation matrix M
-% load('M', 'M');
+load('M', 'M');
 
 %pre-alocate the dif matrix
 dif = zeros(size(M,1)/2,4);

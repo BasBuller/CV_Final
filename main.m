@@ -10,7 +10,7 @@
 %   -Bas Buller 4166566
 %   -Rick Feith 4218272
 
-clear all; close all;
+clear all; close all; clc;
 
 
 %% Tunable parameters
@@ -26,7 +26,8 @@ step1               = 0; % Perform feature detection
 step2               = 0; % Perform feature matching
 step3               = 0; % Apply normalized 8-point Ransac to find best matches
 step4               = 0; % Determine point view matrix
-step5               = 1; % 3D coordinates for 3 and 4 consecutive images
+step5               = 0; % 3D coordinates for 3 and 4 consecutive images
+step6               = 0; % Procrustes analysis
 plots               = 0; % Show example plots
 
 
@@ -251,19 +252,39 @@ if(step5)
     end
     
     % 3 consecutive images
-    three_im = [1:19; 2:19 1; 3:19 1 2];
-    three_models = SfM(keypoints, PVM, three_im);
+    triple_im = [1:19; 2:19 1; 3:19 1 2];
+    triple_models = SfM(keypoints, PVM, triple_im);
     
     % 4 consecutive images
     quad_im = [1:19; 2:19 1; 3:19 1 2; 4:19 1:3];
     quad_models = SfM(keypoints, PVM, quad_im);
     
     if(own_algorithm)
-        save own_triple_matches triple_matches
-        save own_quad_matches quad_matches
+        save own_triple_matches triple_models
+        save own_quad_matches quad_models
     else
-        save vl_triple_matches triple_matches
-        save vl_quad_matches quad_matches
+        save vl_triple_matches triple_models
+        save vl_quad_matches quad_models
+    end
+end
+
+
+if(step6)
+%% Procrustes analysis for complete 3D model
+    if(own_algorithm)
+        load own_triple_matches
+        load own_quad_matches
+    else
+        load vl_triple_matches
+        load vl_quad_matches
+    end
+    
+    
+    
+    if(own_algorithm)
+        
+    else
+        
     end
 end
 

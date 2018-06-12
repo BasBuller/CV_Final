@@ -15,45 +15,57 @@
 %   - Bas Buller 4166566
 %   - Rick Feith 4218272
 
-function models = SfM(keypoints, pvm, images)
+function models = SfM(keypoints, pvm, frames)
 % Loop over all columns of the images matrix, such to cover all
 % combinations of 3 or 4 consecutive images
-models = {};
+models = {size(frames, 2), 1};
 
-for i = 1:size(images, 2)
+for i = 1:size(frames, 2)
     % Determine the point coordinates to be used during SfM
-    match = pvm(images(:, i), :);
-    pts = zeros(size(match,1) * 2, size(match,2));
+    match = pvm(frames(:, i), :);
     
+    % Find columns of points that are not present in all consecutive images
+    [~, col] = find(~match);
+    
+    % Remove columns with zeros
+    match(:, col) = [];
+    
+    pts = zeros(size(match,1) * 2, size(match,2));
     % Fill pts with coordinates of keypoints
-    for j = 1:size(images, 1)
-        pts((2*j-1),:) = keypoints{images(j, i),2}(j, match(j, :)); % indexing goes wrong here, matlab cannot take 0 as index
-        pts((2*j),:) = keypoints{images(j,i),3}(j, match(j, :));
+    for j = 1:size(match, 1)
+        pts((2*j-1),:) = keypoints{frames(j, i),2}(match(j, :)); % indexing goes wrong here, matlab cannot take 0 as index
+        pts((2*j),:) = keypoints{frames(j,i),3}(match(j, :));
     end
 
-    % Determine SVD composition and reduce to rank 3
-    [U, W, V]   = svd(pts);
-    U3          = U(:, 1:3);
-    W3          = W(1:3, 1:3);
-    V           = V';
-    V3          = V(1:3, :);
+    % make sure atleast 3 points are visible in all images
+    if(size(pts, 2) > 2)    
+        % Determine SVD composition and reduce to rank 3
+        [U, W, V]   = svd(pts);
+        U3          = U(:, 1:3);
+        W3          = W(1:3, 1:3); % Bugs out because there are no matchs covering 3 images
+        V           = V';
+        V3          = V(1:3, :);
 
-    M           = U3 * sqrt(W3);
-    S           = sqrt(W3) *  V3;
+        M           = U3 * sqrt(W3);
+        S           = sqrt(W3) *  V3;
 
-    % resolve affine ambiguity and solve for L
-    L0          = pinv(A'*A);
-    L           = lsqnonlin(@myfun, L0);
+    %     save('M', 'M');
+    % 
+    %     % resolve affine ambiguity and solve for L
+    %     A           = M(1:2, :);
+    %     L0          = pinv(A'*A);
+    %     L           = lsqnonlin(@residuals, L0);
+    % 
+    %     % Recover C
+    %     C           = chol(L, 'lower');
+    % 
+    %     % Update M and S
+    %     M           = M*C;
+    %     S           = pinv(C)*S;
 
-    % Recover C
-    C           = chol(L, 'lower');
-
-    % Update M and S
-    M           = M*C;
-    S           = pinv(C)*S;
-    
-    % Append to models cell array
-    models(i,1) = {S};
+        % Append to models cell array
+        models(i,1) = {S};
+    end
 end
 
 end
