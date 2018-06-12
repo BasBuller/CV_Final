@@ -250,46 +250,13 @@ if(step5)
         load vl_pvm
     end
     
-    % 3D coordinates for 3 consecutive images
-    triple_matches = {19, 1};
-    for i = 1:(size(keypoints, 1) - 2) 
-        % select columns of points visible in 3 images
-        match = PVM(i:(i+2), :);
-        for j = 1:3             % x & y for selected images
-            
-        end
-        
-        % determine 3D coordinates through affine structure from motion
-        coordinates = SfM(keypoints, match);
-        triple_matches(i, 1) = {coordinates};
-    end
+    % 3 consecutive images
+    three_im = [1:19; 2:19 1; 3:19 1 2];
+    three_models = SfM(keypoints, PVM, three_im);
     
-    % 3D coordinates for images 18-19-01, 19-01-02
-    last_rows = [18 19 1; 19 1 2];
-    for i = 1:size(last_rows, 1)
-        match = PVM(last_rows(i), :);
-        coordinates = SfM(keypoints, match);
-        triple_matches(17+i, 1) = {coordinates};
-    end
-    
-    % 3D coordinates for 4 consecutive images
-    quad_matches = {19, 1};
-    for i = 1:(size(keypoints, 1) - 3)
-        % select columns of points visible in 4 images
-        match = PVM(i:(i+3), :);
-        
-        % determine 3D coordinates through affine structure from motion
-        coordinates = SfM(keypoints, match);
-        quad_matches(i, 1) = {coordinates};
-    end
-    
-    % 3D coordinates for images 17-18-19-01, 18-19-01-02, 19-01-02-03
-    last_rows = [17 18 19 1; 18 19 1 2; 19 1 2 3];
-    for i = 1:size(last_rows, 1)
-        match = PVM(last_rows(i), :);
-        coordinates = SfM(keypoints, match);
-        triple_matches(16+i, 1) = {coordinates};
-    end
+    % 4 consecutive images
+    quad_im = [1:19; 2:19 1; 3:19 1 2; 4:19 1:3];
+    quad_models = SfM(keypoints, PVM, quad_im);
     
     if(own_algorithm)
         save own_triple_matches triple_matches
