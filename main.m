@@ -220,6 +220,7 @@ end
 
 if(step4)
 %% Point view matrix
+    fprintf('Find point view matrix')
     if(own_algorithm)
         load own_keypoints
         load own_matches
