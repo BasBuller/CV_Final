@@ -113,7 +113,7 @@ function complete_model = model_stitching(triple_models, quad_models)
         updated_triple_models(order(i+1)) = {new_triple};
         
         % Append transformed models to the complete model
-        complete_model = [complete_model updated_triple_models{order(i+1)};
+        complete_model = [complete_model updated_triple_models{order(i+1)}];
 %         complete_model = [complete_model updated_quad_models{order(i)} updated_triple_models{order(i+1)}];
     end
         
