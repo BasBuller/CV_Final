@@ -18,10 +18,11 @@
 function models = SfM(keypoints, pvm, frames)
 % Loop over all columns of the images matrix, such to cover all
 % combinations of 3 or 4 consecutive images
-models = cell(size(frames, 2), 1);
+models = cell(size(frames, 2), 2);
 
 for i = 1:size(frames, 2)
-    % Determine the point coordinates to be used during SfM
+    % Determine the point coordinates to be used during SfM, results in
+    % using rows of PVM corresponding to required images
     match = pvm(frames(:, i), :);
     
     % Find columns of points that are not present in all consecutive images
@@ -64,7 +65,8 @@ for i = 1:size(frames, 2)
     %     S           = pinv(C)*S;
 
         % Append to models cell array
-        models(i) = {S};
+        models(i,1) = {S};
+        models(i,2) = {match};
     end
 end
 
