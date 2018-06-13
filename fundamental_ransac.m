@@ -55,4 +55,5 @@ for i = 1:total_inliers
     A(i,:) = [x2(inliers(i))*x1(inliers(i)) x2(inliers(i))*y1(inliers(i)) x2(inliers(i)) y2(inliers(i))*x1(inliers(i)) y2(inliers(i))*y1(inliers(i)) y2(inliers(i)) x1(inliers(i)) y1(inliers(i)) 1]; 
 end
 F  = fundamental_matrix(A);
+
 end
