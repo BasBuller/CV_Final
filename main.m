@@ -22,13 +22,13 @@ ransac_iters        = 2000;
 ransac_thresh       = 15;
 
 own_algorithm       = 0; % Use sift feature detection and matching (0) or own algorithm (1)      
-step1               = 1; % Perform feature detection
-step2               = 1; % Perform feature matching
-step3               = 1; % Apply normalized 8-point Ransac to find best matches
-step4               = 1; % Determine point view matrix
+step1               = 0; % Perform feature detection
+step2               = 0; % Perform feature matching
+step3               = 0; % Apply normalized 8-point Ransac to find best matches
+step4               = 0; % Determine point view matrix
 step5               = 1; % 3D coordinates for 3 and 4 consecutive images
 step6               = 0; % Procrustes analysis
-plots               = 1; % Show example plots
+plots               = 0; % Show example plots
 image1              = 15;% Which images are plotted, this number indicates the left image
 
 if(step1)
@@ -266,15 +266,15 @@ if(step5)
         load vl_matches
         load vl_pvm
     end
-    
+    skips = 0;
     % 3 consecutive images
     triple_im = [1:19; 2:19 1; 3:19 1 2];
-    triple_models = SfM(keypoints, PVM, triple_im);
-    
+    [triple_models,skips] = SfM(keypoints, PVM, triple_im,skips);
+    skips
     % 4 consecutive images
     quad_im = [1:19; 2:19 1; 3:19 1 2; 4:19 1:3];
-    quad_models = SfM(keypoints, PVM, quad_im);
-    
+    [quad_models,skips] = SfM(keypoints, PVM, quad_im,skips);
+    skips
     if(own_algorithm)
         save own_triple_models triple_models
         save own_quad_models quad_models
