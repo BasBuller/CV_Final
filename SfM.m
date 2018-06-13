@@ -18,7 +18,7 @@
 function models = SfM(keypoints, pvm, frames)
 % Loop over all columns of the images matrix, such to cover all
 % combinations of 3 or 4 consecutive images
-models = {size(frames, 2), 1};
+models = cell(size(frames, 2), 1);
 
 for i = 1:size(frames, 2)
     % Determine the point coordinates to be used during SfM
@@ -28,7 +28,7 @@ for i = 1:size(frames, 2)
     [~, col] = find(~match);
     
     % Remove columns with zeros
-    match(:, col) = [];
+    match(:, unique(col)) = [];
     
     pts = zeros(size(match,1) * 2, size(match,2));
     % Fill pts with coordinates of keypoints
@@ -64,7 +64,7 @@ for i = 1:size(frames, 2)
     %     S           = pinv(C)*S;
 
         % Append to models cell array
-        models(i,1) = {S};
+        models(i) = {S};
     end
 end
 

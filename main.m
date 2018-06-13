@@ -27,7 +27,7 @@ step2               = 0; % Perform feature matching
 step3               = 0; % Apply normalized 8-point Ransac to find best matches
 step4               = 0; % Determine point view matrix
 step5               = 0; % 3D coordinates for 3 and 4 consecutive images
-step6               = 1; % Procrustes analysis
+step6               = 0; % Procrustes analysis
 plots               = 0; % Show example plots
 
 
