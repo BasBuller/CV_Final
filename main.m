@@ -19,17 +19,19 @@ harris_threshold    = 0.0005;
 nearest_neighbour   = 0.85;
 sift_thresh         = 0.75;
 ransac_iters        = 2000;
-ransac_thresh       = 10;
+ransac_thresh       = 15;
 
 own_algorithm       = 0; % Use sift feature detection and matching (0) or own algorithm (1)      
-step1               = 1; % Perform feature detection
-step2               = 1; % Perform feature matching
-step3               = 1; % Apply normalized 8-point Ransac to find best matches
-step4               = 1; % Determine point view matrix
-step5               = 1; % 3D coordinates for 3 and 4 consecutive images
+step1               = 0; % Perform feature detection
+step2               = 0; % Perform feature matching
+step3               = 0; % Apply normalized 8-point Ransac to find best matches
+step4               = 0; % Determine point view matrix
+step5               = 0; % 3D coordinates for 3 and 4 consecutive images
 step6               = 0; % Procrustes analysis
+step7               = 0; % Bundle adjustment
+step8               = 1; % Surface plot of complete model
 plots               = 0; % Show example plots
-image1              = 1;% Which images are plotted, this number indicates the left image
+image1              = 0; % Which images are plotted, this number indicates the left image
 
 if(step1)
 %% Step 1: create list of images, Detect feature points and create Sift descriptor
@@ -224,7 +226,7 @@ end
 
 if(step4)
 %% Point view matrix
-    fprintf('Find point view matrix')
+    fprintf('Find point view matrix');
     if(own_algorithm)
         load own_keypoints
         load own_matches
@@ -285,17 +287,43 @@ if(step6)
     end
     
     % Complete 3D model
-    comp_model = model_stitching(triple_models, quad_models);
+    complete_model = model_stitching(triple_models, quad_models);
     
     if(own_algorithm)
-        save own_comp_model comp_model
+        save own_complete_model complete_model
     else
-        save vl_com_model comp_model
+        save vl_complete_model complete_model
     end
 end
 
 
+if(step7)
+%% Bundle Adjustment 
+    if(own_algorithm)
+        load own_complete_model
+    else
+        load vl_complete_model
+    end
+    
+    if(own_algorithm)
+        save own_complete_model complete model
+    else
+        save vl_complete_model complete model
+    end
+end
 
+
+if(step8)
+%% Surface plot of complete model
+    if(own_algorithm)
+        load own_complete_model
+    else
+        load vl_complete_model
+    end
+    
+    % Plot 3D scatter plot of the complete model
+    scatter3(complete_model(1,:), complete_model(2,:), complete_model(3,:))
+end
 
 
 
