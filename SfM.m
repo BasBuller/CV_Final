@@ -50,19 +50,19 @@ for i = 1:size(frames, 2)
         M           = U3 * sqrt(W3);
         S           = sqrt(W3) *  V3;
 
-    %     save('M', 'M');
-    % 
-    %     % resolve affine ambiguity and solve for L
-    %     A           = M(1:2, :);
-    %     L0          = pinv(A'*A);
-    %     L           = lsqnonlin(@residuals, L0);
-    % 
-    %     % Recover C
-    %     C           = chol(L, 'lower');
-    % 
-    %     % Update M and S
-    %     M           = M*C;
-    %     S           = pinv(C)*S;
+%         save('M', 'M');
+%     
+%         resolve affine ambiguity and solve for L
+%         A           = M(1:2, :);
+%         L0          = pinv(A'*A);
+%         L           = lsqnonlin(@residuals, L0);
+%     
+%         Recover C
+%         C           = chol(L, 'lower');
+%     
+%         Update M and S
+%         M           = M*C;
+%         S           = pinv(C)*S;
 
         % Append to models cell array
         models(i,1) = {S};
