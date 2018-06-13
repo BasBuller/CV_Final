@@ -10,26 +10,26 @@
 %   -Bas Buller 4166566
 %   -Rick Feith 4218272
 
-clear all; close all; clc;
+clear all; close all; 
 
 
 %% Tunable parameters
 harris_scales       = 7; % determines how many scales the image is checked for
 harris_threshold    = 0.0005;
-nearest_neighbour   = 0.8;
-sift_thresh         = 1;
+nearest_neighbour   = 0.85;
+sift_thresh         = 0.75;
 ransac_iters        = 2000;
-ransac_thresh       = 1e-01;
+ransac_thresh       = 10;
 
 own_algorithm       = 0; % Use sift feature detection and matching (0) or own algorithm (1)      
 step1               = 0; % Perform feature detection
 step2               = 0; % Perform feature matching
 step3               = 0; % Apply normalized 8-point Ransac to find best matches
-step4               = 0; % Determine point view matrix
-step5               = 0; % 3D coordinates for 3 and 4 consecutive images
+step4               = 1; % Determine point view matrix
+step5               = 1; % 3D coordinates for 3 and 4 consecutive images
 step6               = 0; % Procrustes analysis
 plots               = 0; % Show example plots
-
+image1              = 1;% Which images are plotted, this number indicates the left image
 
 if(step1)
 %% Step 1: create list of images, Detect feature points and create Sift descriptor
@@ -46,7 +46,7 @@ if(step1)
     num_of_im = length(keypoints);
     for i = 1:num_of_im
         fprintf(strcat("Starting image ",num2str(i)," of ",num2str(num_of_im)," \n"))
-        if(own_algorithm)
+%         if(own_algorithm)
             [s,r,c] = extractfeatures(keypoints{i,1},harris_scales,harris_threshold);
             
             % create sift Descriptor
@@ -55,21 +55,34 @@ if(step1)
             keypoints(i,3) = {y};
             keypoints(i,4) = {s};
             keypoints(i,5) = {d};
+            fprintf(strcat(num2str(length(x))+" keypoints found. \n"))
             
-        else % using only vl_sift
-            [f,d] = vl_sift(single(rgb2gray(imread(keypoints{i,1}))),'PeakThresh',sift_thresh);  
-            keypoints(i,2) = {f(1,:)};
-            keypoints(i,3) = {f(2,:)};
-            keypoints(i,4) = {f(3,:)};
-            keypoints(i,5) = {d};
-        end
+%         else % using only vl_sift
+%             [f,d] = vl_sift(single(rgb2gray(imread(keypoints{i,1}))),'PeakThresh',sift_thresh);  
+%             keypoints(i,2) = {f(1,:)};
+%             keypoints(i,3) = {f(2,:)};
+%             keypoints(i,4) = {f(3,:)};
+%             keypoints(i,5) = {d};
+%             fprintf(strcat(num2str(length(f(1,:)))+" keypoints found. \n"))
+%         end
+        
+%         figure('name',num2str(i))
+%         imshow(imread(keypoints{1,1}))
+%         hold on
+%         x1 = keypoints{1,2};
+%         y1 = keypoints{1,3};
+%         scatter(x1,y1,'r')
+    
     end
 
     if(own_algorithm)
         save own_keypoints keypoints
+        save vl_keypoints keypoints
+        
     else
         save vl_keypoints keypoints
     end
+    
 end
 
 
@@ -93,6 +106,7 @@ if(step2)
             [match, scores]  = vl_ubcmatch(keypoints{i,5},keypoints{i+1,5},1/nearest_neighbour );
             matches(i,1) = {match};
         end
+        fprintf(strcat(num2str(length(match(1,:)))+" matches found. \n"))
     end
 
     % perform match between last and first image and write to data
@@ -106,6 +120,7 @@ if(step2)
         matches(19,1) = {match};
         save vl_matches matches
      end
+     fprintf(strcat(num2str(length(match(1,:)))+" matches found. \n"))
 end
 
 
@@ -135,6 +150,7 @@ if(step3)
 %       FRD = T2' * F * T1; 
         [FRD, inliers] = estimateFundamentalMatrix([x1',y1'],[x2',y2'],'method','RANSAC','NumTrials',2000,'DistanceThreshold',ransac_thresh);
         matches{i,2} = inliers';
+        fprintf(strcat(num2str(length(find(inliers)))+" inliers found. \n"))
     end
     
         % normalize data
@@ -150,7 +166,7 @@ if(step3)
 %       FRD = T2' * F * T1; 
         [FRD, inliers] = estimateFundamentalMatrix([x1',y1'],[x2',y2'],'method','RANSAC','NumTrials',2000,'DistanceThreshold',ransac_thresh);
         matches{19, 2} = inliers';
-  
+        fprintf(strcat(num2str(length(find(inliers)))+" inliers found. \n"))
         % save data
     if(own_algorithm)
         save own_matches matches
@@ -160,15 +176,15 @@ if(step3)
    
 %     % plotting results
 % [lines] = epipolarLine(FRD, [x1(inliers)',y1(inliers)']);
-% points = lineToBorderPoints(lines, size(imread(data{2,1})));
-% 
+% points = lineToBorderPoints(lines, size(imread(keypoints{2,1})));
+% % 
 % figure()
-% imshow(imread(data{1,1}))
+% imshow(imread(keypoints{1,1}))
 % hold on
 % scatter(x1(inliers),y1(inliers),'r')
 % 
 % figure()
-% imshow(imread(data{2,1}))
+% imshow(imread(keypoints{2,1}))
 % hold on
 % line(points(:,[1,3])',points(:,[2,4])');
 %     
@@ -193,17 +209,17 @@ if(plots)
     else
         figure('name','1 and 2 with vl_sift')
     end
-    imshow([imread(keypoints{1,1}) imread(keypoints{2,1})])
+    imshow([imread(keypoints{image1,1}) imread(keypoints{image1+1,1})])
     hold on
-    x1 = keypoints{1,2}(matches{1,1}(1,matches{1,2}));
-    y1 = keypoints{1,3}(matches{1,1}(1,matches{1,2}));
-    x2 = size(imread(keypoints{1,1}),2)+keypoints{2,2}(matches{1,1}(2,matches{1,2}));
-    y2 = keypoints{2,3}(matches{1,1}(2,matches{1,2}));
+    x1 = keypoints{image1,2}(matches{image1,1}(1,matches{image1,2}));
+    y1 = keypoints{image1,3}(matches{image1,1}(1,matches{image1,2}));
+    x2 = size(imread(keypoints{image1,1}),2)+keypoints{image1+1,2}(matches{image1,1}(2,matches{image1,2}));
+    y2 = keypoints{image1+1,3}(matches{image1,1}(2,matches{image1,2}));
 
     scatter(x1,y1,'r')
     scatter(x2,y2,'r')
     line([x1;x2],[y1;y2],'color','b')
-
+    size(x1)
     % figure('name','1 and 2 with vl_sift algorithm')
     % imshow([imread(data{1,1}) imread(data{2,1})])
     % hold on
