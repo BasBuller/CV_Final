@@ -8,7 +8,7 @@
 %   -   quad_models = 3D coordinates from four consecutive images
 %
 % Output:
-%   -   model = complete 3D model
+%   -   complete_model = complete 3D model
 %
 % Authors: 
 %   - Bas Buller 4166566
