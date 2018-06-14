@@ -21,7 +21,8 @@ function [models,skips] = SfM(keypoints, pvm, frames,skips)
 models = cell(size(frames, 2), 2);
 
 for i = 1:size(frames, 2)
-    % Determine the point coordinates to be used during SfM
+    % Determine the point coordinates to be used during SfM, results in
+    % using rows of PVM corresponding to required images
     match = pvm(frames(:, i), :);
     
     % Find columns of points that are not present in all consecutive images

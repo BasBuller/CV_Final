@@ -28,6 +28,8 @@ step3               = 0; % Apply normalized 8-point Ransac to find best matches
 step4               = 0; % Determine point view matrix
 step5               = 1; % 3D coordinates for 3 and 4 consecutive images
 step6               = 0; % Procrustes analysis
+step7               = 0; % Bundle adjustment
+step8               = 1; % Surface plot of complete model
 plots               = 0; % Show example plots
 image1              = 15;% Which images are plotted, this number indicates the left image
 
@@ -63,26 +65,14 @@ if(step1)
 %             keypoints(i,3) = {f(2,:)};
 %             keypoints(i,4) = {f(3,:)};
 %             keypoints(i,5) = {d};
-%             fprintf(strcat(num2str(length(f(1,:)))+" keypoints found. \n"))
 %         end
-        
-%         figure('name',num2str(i))
-%         imshow(imread(keypoints{1,1}))
-%         hold on
-%         x1 = keypoints{1,2};
-%         y1 = keypoints{1,3};
-%         scatter(x1,y1,'r')
-    
     end
 
-    if(own_algorithm)
-        save own_keypoints keypoints
+%     if(own_algorithm)
+%         save own_keypoints keypoints
+%     else
         save vl_keypoints keypoints
-        
-    else
-        save vl_keypoints keypoints
-    end
-    
+%     end
 end
 
 
@@ -236,6 +226,7 @@ end
 
 if(step4)
 %% Point view matrix
+    fprintf('Find point view matrix');
     if(own_algorithm)
         load own_keypoints
         load own_matches
@@ -296,17 +287,43 @@ if(step6)
     end
     
     % Complete 3D model
-    comp_model = model_stitching(triple_models, quad_models);
+    complete_model = model_stitching(triple_models, quad_models);
     
     if(own_algorithm)
-        save own_comp_model comp_model
+        save own_complete_model complete_model
     else
-        save vl_com_model comp_model
+        save vl_complete_model complete_model
     end
 end
 
 
+if(step7)
+%% Bundle Adjustment 
+    if(own_algorithm)
+        load own_complete_model
+    else
+        load vl_complete_model
+    end
+    
+    if(own_algorithm)
+        save own_complete_model complete model
+    else
+        save vl_complete_model complete model
+    end
+end
 
+
+if(step8)
+%% Surface plot of complete model
+    if(own_algorithm)
+        load own_complete_model
+    else
+        load vl_complete_model
+    end
+    
+    % Plot 3D scatter plot of the complete model
+    scatter3(complete_model(1,:), complete_model(2,:), complete_model(3,:))
+end
 
 
 
