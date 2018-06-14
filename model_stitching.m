@@ -82,7 +82,7 @@ function complete_model = model_stitching(triple_models, quad_models)
         
         match_triple = triple_models{order(i), 2};
         match_quad = quad_models{order(i), 2}(1:3, :);
-        
+        save temp
         % Find intersection of points between four and three view
         [~, ~, IB] = intersect(match_quad', match_triple', 'rows', 'stable');
         

@@ -14,24 +14,24 @@ clear all; close all;
 
 
 %% Tunable parameters
-harris_scales       = 11; % determines how many scales the image is checked for
-harris_threshold    = 0.0005;
-nearest_neighbour   = 0.85;
+harris_scales       = 22; % determines how many scales the image is checked for
+harris_threshold    = 0.0001;
+nearest_neighbour   = 0.87;
 sift_thresh         = 0.75;
-ransac_iters        = 2000;
+ransac_iters        = 3000;
 ransac_thresh       = 15;
 
 own_algorithm       = 0; % Use sift feature detection and matching (0) or own algorithm (1)      
 step1               = 0; % Perform feature detection
 step2               = 0; % Perform feature matching
-step3               = 0; % Apply normalized 8-point Ransac to find best matches
-step4               = 0; % Determine point view matrix
+step3               = 1; % Apply normalized 8-point Ransac to find best matches
+step4               = 1; % Determine point view matrix
 step5               = 1; % 3D coordinates for 3 and 4 consecutive images
-step6               = 0; % Procrustes analysis
-step7               = 0; % Bundle adjustment
+step6               = 1; % Procrustes analysis
+step7               = 1; % Bundle adjustment
 step8               = 1; % Surface plot of complete model
 plots               = 0; % Show example plots
-image1              = 15;% Which images are plotted, this number indicates the left image
+image1              = 1;% Which images are plotted, this number indicates the left image
 
 if(step1)
 %% Step 1: create list of images, Detect feature points and create Sift descriptor
@@ -73,6 +73,12 @@ if(step1)
 %     else
         save vl_keypoints keypoints
 %     end
+% figure()
+%   imshow(imread(keypoints{image1,1}))
+%    hold on
+%     x1 = keypoints{image1,2};
+%     y1 = keypoints{image1,3};
+%     scatter(x1,y1)
 end
 
 
@@ -285,10 +291,10 @@ if(step6)
         load vl_triple_models
         load vl_quad_models
     end
-    
+    tic
     % Complete 3D model
     complete_model = model_stitching(triple_models, quad_models);
-    
+    toc
     if(own_algorithm)
         save own_complete_model complete_model
     else
@@ -306,9 +312,9 @@ if(step7)
     end
     
     if(own_algorithm)
-        save own_complete_model complete model
+        save own_complete_model complete_model
     else
-        save vl_complete_model complete model
+        save vl_complete_model complete_model
     end
 end
 
@@ -322,7 +328,7 @@ if(step8)
     end
     
     % Plot 3D scatter plot of the complete model
-    scatter3(complete_model(1,:), complete_model(2,:), complete_model(3,:))
+    scatter3(complete_model(1,:), complete_model(2,:), complete_model(3,:),'.b')
 end
 
 
