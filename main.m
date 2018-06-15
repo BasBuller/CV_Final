@@ -21,9 +21,9 @@ sift_thresh         = 0.75;
 ransac_iters        = 3000;
 ransac_thresh       = 10;
 
-own_algorithm       = 0; % Use sift feature detection and matching (0) or own algorithm (1)      
-step1               = 0; % Perform feature detection
-step2               = 0; % Perform feature matching
+own_algorithm       = 1; % Use sift feature detection and matching (0) or own algorithm (1)      
+step1               = 1; % Perform feature detection
+step2               = 1; % Perform feature matching
 step3               = 1; % Apply normalized 8-point Ransac to find best matches
 step4               = 1; % Determine point view matrix
 step5               = 1; % 3D coordinates for 3 and 4 consecutive images
