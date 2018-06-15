@@ -22,7 +22,7 @@ name_list = {folder_names(:).name};
 
 names = {};
 for i = 1:length(name_list)
-    if (endsWith(name_list{i},".JPG"))
+    if (endsWith(name_list{i},".png"))
         names = [names; char(strcat(string(folder),"/",name_list{i}))];
     end
 end

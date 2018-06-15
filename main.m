@@ -16,22 +16,23 @@ clear all;
 %% Tunable parameters
 harris_scales       = 22; % determines how many scales the image is checked for
 harris_threshold    = 0.0001;
-nearest_neighbour   = 0.87;
+nearest_neighbour   = 0.80;
 sift_thresh         = 0.75;
-ransac_iters        = 3000;
-ransac_thresh       = 10;
+ransac_iters        = 10000;
+ransac_thresh       = 15;
 
-own_algorithm       = 1; % Use sift feature detection and matching (0) or own algorithm (1)      
-step1               = 1; % Perform feature detection
-step2               = 1; % Perform feature matching
-step3               = 1; % Apply normalized 8-point Ransac to find best matches
-step4               = 1; % Determine point view matrix
-step5               = 1; % 3D coordinates for 3 and 4 consecutive images
-step6               = 1; % Procrustes analysis
+own_algorithm       = 0; % Use sift feature detection and matching (0) or own algorithm (1)  
+extract_feats       = 0; % Use the extract features program 
+step1               = 0; % Perform feature detection
+step2               = 0; % Perform feature matching
+step3               = 0; % Apply normalized 8-point Ransac to find best matches
+step4               = 0; % Determine point view matrix
+step5               = 0; % 3D coordinates for 3 and 4 consecutive images
+step6               = 0; % Procrustes analysis
 step7               = 0; % Bundle adjustment
 step8               = 0; % Surface plot of complete model
 plots               = 0; % Show example plots
-image1              = 0; % Which images are plotted, this number indicates the left image
+image1              = 14; % Which images are plotted, this number indicates the left image
 
 if(step1)
 %% Step 1: create list of images, Detect feature points and create Sift descriptor
@@ -65,6 +66,7 @@ if(step1)
             keypoints(i,4) = {[a1' b1' c1']};
             keypoints(i,5) = {[desc1' desc2']};
             fprintf(strcat(num2str(length([x1' x2']))+" keypoints found. \n"))
+            
 %         else % using only vl_sift
 %             [f,d] = vl_sift(single(rgb2gray(imread(keypoints{i,1}))),'PeakThresh',sift_thresh);  
 %             keypoints(i,2) = {f(1,:)};
@@ -113,7 +115,7 @@ if(step2)
 
     % perform match between last and first image and write to data
     fprintf(("Started Matching on Image 19 \n"));
-     if(own_algorithm)
+    if(own_algorithm)
         match = match_features(keypoints{19,2},keypoints{19,3},keypoints{19,5},keypoints{1,2},keypoints{1,3},keypoints{1,5},nearest_neighbour);
         matches(19,1) = {match};
         save own_matches matches
@@ -121,8 +123,8 @@ if(step2)
         [match, scores] = vl_ubcmatch(keypoints{19,5},keypoints{1,5},1/nearest_neighbour );
         matches(19,1) = {match};
         save vl_matches matches
-     end
-     fprintf(strcat(num2str(length(match(1,:)))+" matches found. \n"))
+    end
+    fprintf(strcat(num2str(length(match(1,:)))+" matches found. \n"))
 end
 
 
@@ -150,7 +152,7 @@ if(step3)
       % apply 8 point ransac algorithm
       % [F, inliers] = fundamental_ransac(xn1,yn1,xn2,yn2,ransac_iters,ransac_thresh);
 %       FRD = T2' * F * T1; 
-        [FRD, inliers] = estimateFundamentalMatrix([x1',y1'],[x2',y2'],'method','RANSAC','NumTrials',2000,'DistanceThreshold',ransac_thresh);
+        [FRD, inliers] = estimateFundamentalMatrix([x1',y1'],[x2',y2'],'method','RANSAC','NumTrials',ransac_iters,'DistanceThreshold',ransac_thresh);
         matches{i,2} = inliers';
         fprintf(strcat(num2str(length(find(inliers)))+" inliers found. \n"))
     end
@@ -166,7 +168,7 @@ if(step3)
       % apply 8 point ransac algorithm
       % [F, inliers] = fundamental_ransac(xn1,yn1,xn2,yn2,ransac_iters,ransac_thresh);
 %       FRD = T2' * F * T1; 
-        [FRD, inliers] = estimateFundamentalMatrix([x1',y1'],[x2',y2'],'method','RANSAC','NumTrials',2000,'DistanceThreshold',ransac_thresh);
+        [FRD, inliers] = estimateFundamentalMatrix([x1',y1'],[x2',y2'],'method','RANSAC','NumTrials',ransac_iters,'DistanceThreshold',ransac_thresh);
         matches{19, 2} = inliers';
         fprintf(strcat(num2str(length(find(inliers)))+" inliers found. \n"))
         % save data
@@ -313,11 +315,17 @@ if(step7)
 %% Bundle Adjustment 
     if(own_algorithm)
         load own_complete_model
+        load own_pvm
+        load own_keypoints
+        load own_triple_models
     else
         load vl_complete_model
+        load vl_pvm
+        load vl_keypoints
+        load vl_triple_models
     end
     
-    ba_model = bundle_adjustment_complete(complete_model);
+    ba_model = bundle_adjustment_complete(PVM, keypoints, triple_models);
     
     if(own_algorithm)
         save own_complete_model ba_model
@@ -338,7 +346,6 @@ if(step8)
     % Plot 3D scatter plot of the complete model
     scatter3(complete_model(1,:), complete_model(2,:), complete_model(3,:));
 end
-
 
 
 
