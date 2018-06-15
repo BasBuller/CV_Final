@@ -37,13 +37,15 @@ for i = 1:size(frames, 2)
         pts((2*j-1),:) = keypoints{frames(j, i),2}(match(j, :)); 
         pts((2*j),:) = keypoints{frames(j,i),3}(match(j, :));
     end
-    
-    %normalize points
-    for k = 1:size(pts,1)
-        pts(k,:) = pts(k,:) - mean(pts(k,1));
-    end 
+
     % make sure atleast 3 points are visible in all images
-    if(size(pts, 2) > 2)    
+    if(size(pts, 2) > 2)
+        
+        %normalize points
+        for k = 1:size(pts,1)
+            pts(k,:) = pts(k,:) - mean(pts(k,:));
+        end 
+        
         % Determine SVD composition and reduce to rank 3
         [U, W, V]   = svd(pts);
         U3          = U(:, 1:3);

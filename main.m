@@ -10,7 +10,7 @@
 %   -Bas Buller 4166566
 %   -Rick Feith 4218272
 
-clear all; close all; 
+clear all;  
 
 
 %% Tunable parameters
@@ -18,8 +18,8 @@ harris_scales       = 22; % determines how many scales the image is checked for
 harris_threshold    = 0.0001;
 nearest_neighbour   = 0.87;
 sift_thresh         = 0.75;
-ransac_iters        = 3000;
-ransac_thresh       = 15;
+ransac_iters        = 5000;
+ransac_thresh       = 100;
 
 own_algorithm       = 0; % Use sift feature detection and matching (0) or own algorithm (1)      
 step1               = 0; % Perform feature detection
@@ -28,7 +28,7 @@ step3               = 1; % Apply normalized 8-point Ransac to find best matches
 step4               = 1; % Determine point view matrix
 step5               = 1; % 3D coordinates for 3 and 4 consecutive images
 step6               = 1; % Procrustes analysis
-step7               = 1; % Bundle adjustment
+step7               = 0; % Bundle adjustment
 step8               = 1; % Surface plot of complete model
 plots               = 0; % Show example plots
 image1              = 1;% Which images are plotted, this number indicates the left image
@@ -38,7 +38,7 @@ if(step1)
     % create complete data cell
     % | name | x | y | s | d | matches | vl_Sift matches | RANSAC matches
     keypoints = {};
-    folder_name = 'model_castle';
+    folder_name = 'modelCastlePNG';
 
     % create list of images
     keypoints(:,1) = loaddata(folder_name);
@@ -49,16 +49,22 @@ if(step1)
     for i = 1:num_of_im
         fprintf(strcat("Starting image ",num2str(i)," of ",num2str(num_of_im)," \n"))
 %         if(own_algorithm)
-            [s,r,c] = extractfeatures(keypoints{i,1},harris_scales,harris_threshold);
+%             [s,r,c] = extractfeatures(keypoints{i,1},harris_scales,harris_threshold);
+            [x1 y1 a1 b1 c1 desc1 x2 y2 a2 b2 c2 desc2] = extract_features2(keypoints{i,1},0);
             
-            % create sift Descriptor
-            [x,y,d] = sift_descriptor(keypoints{i,1},s,r,c);
-            keypoints(i,2) = {x};
-            keypoints(i,3) = {y};
-            keypoints(i,4) = {s};
-            keypoints(i,5) = {d};
-            fprintf(strcat(num2str(length(x))+" keypoints found. \n"))
+% %            create sift Descriptor
+%              [x,y,d] = sift_descriptor(keypoints{i,1},s,r,c);
+%             keypoints(i,2) = {x};
+%             keypoints(i,3) = {y};
+%             keypoints(i,4) = {s};
+%             keypoints(i,5) = {d};
+%             fprintf(strcat(num2str(length(x))+" keypoints found. \n"))
             
+            keypoints(i,2) = {[x1' x2']};
+            keypoints(i,3) = {[y1' y2']};
+            keypoints(i,4) = {[a1' b1' c1']};
+            keypoints(i,5) = {[desc1' desc2']};
+            fprintf(strcat(num2str(length([x1' x2']))+" keypoints found. \n"))
 %         else % using only vl_sift
 %             [f,d] = vl_sift(single(rgb2gray(imread(keypoints{i,1}))),'PeakThresh',sift_thresh);  
 %             keypoints(i,2) = {f(1,:)};
@@ -327,8 +333,25 @@ if(step8)
         load vl_complete_model
     end
     
-    % Plot 3D scatter plot of the complete model
-    scatter3(complete_model(1,:), complete_model(2,:), complete_model(3,:),'.b')
+%     % Plot 3D scatter plot of the complete model
+figure()
+     scatter3(complete_model(1,:), complete_model(2,:), complete_model(3,:),'.b')
+% [X,Y] = meshgrid(round(complete_model(1,:)), round(complete_model(2,:)));
+x = complete_model(1,:);
+y = complete_model(2,:);
+z = complete_model(3,:);
+% x = x - min(x);
+% y = y - min(y);
+% z = z -min(z);
+% model = zeros(ceil(max(y)),ceil(max(x)));
+% for i = 1: length(x)
+%     model(round(y(i))+1,round(x(i))+1) = z(i);
+%     
+% end
+% tri = delaunay(x,y);
+% trisurf(tri,x,y,z)
+% figure()
+% surf(X,Y,model)
 end
 
 
