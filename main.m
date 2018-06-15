@@ -27,7 +27,7 @@ step2               = 0; % Perform feature matching
 step3               = 0; % Apply normalized 8-point Ransac to find best matches
 step4               = 0; % Determine point view matrix
 step5               = 0; % 3D coordinates for 3 and 4 consecutive images
-step6               = 0; % Procrustes analysis
+step6               = 1; % Procrustes analysis
 step7               = 0; % Bundle adjustment
 step8               = 1; % Surface plot of complete model
 plots               = 0; % Show example plots
@@ -306,9 +306,9 @@ if(step7)
     end
     
     if(own_algorithm)
-        save own_complete_model complete model
+        save own_complete_model complete_model
     else
-        save vl_complete_model complete model
+        save vl_complete_model complete_model
     end
 end
 
