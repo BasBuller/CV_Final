@@ -38,10 +38,11 @@ for i = 1:size(frames, 2)
         pts((2*j),:) = keypoints{frames(j,i),3}(match(j, :));
     end
     
-    %normalize points
+    % Remove mean
     for k = 1:size(pts,1)
-        pts(k,:) = pts(k,:) - mean(pts(k,1));
+        pts(k,:) = pts(k,:) - mean(pts(k,:));
     end 
+    
     % make sure atleast 3 points are visible in all images
     if(size(pts, 2) > 2)    
         % Determine SVD composition and reduce to rank 3

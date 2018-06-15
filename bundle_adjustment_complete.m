@@ -13,5 +13,8 @@
 %   - Rick Feith 4218272
 
 function bundle_adjustment_complete(model)
-
+    
+    
+    % apply bundle adjustment, model provided as columns vectors
+    adj_model = bundle_adjustment(model', );
 end
