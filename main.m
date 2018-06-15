@@ -10,7 +10,7 @@
 %   -Bas Buller 4166566
 %   -Rick Feith 4218272
 
-clear all; close all; 
+clear all;  
 
 
 %% Tunable parameters
@@ -38,7 +38,7 @@ if(step1)
     % create complete data cell
     % | name | x | y | s | d | matches | vl_Sift matches | RANSAC matches
     keypoints = {};
-    folder_name = 'model_castle';
+    folder_name = 'modelCastlePNG';
 
     % create list of images
     keypoints(:,1) = loaddata(folder_name);
@@ -49,16 +49,22 @@ if(step1)
     for i = 1:num_of_im
         fprintf(strcat("Starting image ",num2str(i)," of ",num2str(num_of_im)," \n"))
 %         if(own_algorithm)
-            [s,r,c] = extractfeatures(keypoints{i,1},harris_scales,harris_threshold);
+%             [s,r,c] = extractfeatures(keypoints{i,1},harris_scales,harris_threshold);
+            [x1 y1 a1 b1 c1 desc1 x2 y2 a2 b2 c2 desc2] = extract_features2(keypoints{i,1},0);
             
-            % create sift Descriptor
-            [x,y,d] = sift_descriptor(keypoints{i,1},s,r,c);
-            keypoints(i,2) = {x};
-            keypoints(i,3) = {y};
-            keypoints(i,4) = {s};
-            keypoints(i,5) = {d};
-            fprintf(strcat(num2str(length(x))+" keypoints found. \n"))
+% %            create sift Descriptor
+%              [x,y,d] = sift_descriptor(keypoints{i,1},s,r,c);
+%             keypoints(i,2) = {x};
+%             keypoints(i,3) = {y};
+%             keypoints(i,4) = {s};
+%             keypoints(i,5) = {d};
+%             fprintf(strcat(num2str(length(x))+" keypoints found. \n"))
             
+            keypoints(i,2) = {[x1' x2']};
+            keypoints(i,3) = {[y1' y2']};
+            keypoints(i,4) = {[a1' b1' c1']};
+            keypoints(i,5) = {[desc1' desc2']};
+            fprintf(strcat(num2str(length([x1' x2']))+" keypoints found. \n"))
 %         else % using only vl_sift
 %             [f,d] = vl_sift(single(rgb2gray(imread(keypoints{i,1}))),'PeakThresh',sift_thresh);  
 %             keypoints(i,2) = {f(1,:)};
