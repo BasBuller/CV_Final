@@ -8,20 +8,75 @@
 %   -   quad_models = 3D coordinates from four consecutive images
 %
 % Output:
-%   -   complete_model = complete 3D model
-%
+%   -   complete_model  = complete 3D model
+%   -   color           = colors of points in 3d model in normalized rgb.
 % Authors: 
 %   - Bas Buller 4166566
 %   - Rick Feith 4218272
 
 function [complete_model,color] = model_stitching(triple_models, quad_models)
     % Find biggest four view model, set as starting point
+    quad_order = []
+    triple_order = []
     ind = 0;
     len = 0;
     for i = 1:max(size(quad_models))
         if(max(size(quad_models{i})) > len)
-            len = max(size(quad_models{i,1}));
+            len = size(quad_models{i,1},2);
             ind = i;
+        end
+    end
+
+    quad_order = [quad_order ind];
+
+    sign = 0;
+    function [top, bottom] = set_top_bottom(ind,sign,top,bottom)
+    if sign == 0
+        if ind ~= 1 && ind ~= 19
+            top = ind+1;
+            bottom = ind-1;
+        elseif ind ==1
+            top = 2;
+            bottom = 19;
+        else
+            top = 1
+            bottom = 18
+        end
+    elseif sign >0
+        if top ~= 19
+            top = top+1;   
+        else
+            top = 1;
+        end
+    elseif sign < 0
+        if bottom~=1
+            bottom = bottom -1;
+        else
+            bottom = 19;
+        end
+    end
+    end
+
+    [top,bottom]  =set_top_bottom(ind,sign,0,0);
+
+    triple_order = [triple_order ind top];
+
+    for i = 1:max(size(quad_models))
+        if (size(quad_models{top,1},2) >= size(quad_models{bottom,1},2))
+            sign = 1;
+            if (size(quad_models{top,1},2)==0
+                top = set_top_bottom(ind,sign, top,bottom);
+                fprintf("Not enough matches to stitch models. \n")
+            else
+                triple_order = [triple_order top];
+                top = set_top_bottom(ind,sign, top,bottom);
+                quad_order = [quad_order top];
+            end
+        elseif (size(quad_models{top,1},2) < size(quad_models{bottom,1},2))
+            sign = -1;
+            triple_order = [triple_order bottom];
+            [~, bottom] = set_top_bottom(ind,sign,top,bottom);
+            quad_order = [quad_order bottom];
         end
     end
     
