@@ -18,7 +18,7 @@ harris_scales       = 22; % determines how many scales the image is checked for
 harris_threshold    = 0.0001;
 nearest_neighbour   = 0.87;
 sift_thresh         = 0.75;
-ransac_iters        = 5000;
+ransac_iters        = 10000;
 ransac_thresh       = 100;
 
 own_algorithm       = 0; % Use sift feature detection and matching (0) or own algorithm (1)      
@@ -26,8 +26,8 @@ step1               = 0; % Perform feature detection
 step2               = 0; % Perform feature matching
 step3               = 0; % Apply normalized 8-point Ransac to find best matches
 step4               = 0; % Determine point view matrix
-step5               = 0; % 3D coordinates for 3 and 4 consecutive images
-step6               = 0; % Procrustes analysis
+step5               = 1; % 3D coordinates for 3 and 4 consecutive images
+step6               = 1; % Procrustes analysis
 step7               = 0; % Bundle adjustment
 step8               = 1; % Surface plot of complete model
 plots               = 0; % Show example plots
@@ -59,11 +59,13 @@ if(step1)
 %             keypoints(i,4) = {s};
 %             keypoints(i,5) = {d};
 %             fprintf(strcat(num2str(length(x))+" keypoints found. \n"))
-            
-            keypoints(i,2) = {[x1' x2']};
-            keypoints(i,3) = {[y1' y2']};
+            x = [x1' x2'];
+            y = [y1' y2'];
+            keypoints(i,2) = {x};
+            keypoints(i,3) = {y};
             keypoints(i,4) = {[a1' b1' c1']};
             keypoints(i,5) = {[desc1' desc2']};
+            keypoints(i,6) = {impixel(imread(keypoints{i,1}),x,y)./255};
             fprintf(strcat(num2str(length([x1' x2']))+" keypoints found. \n"))
 %         else % using only vl_sift
 %             [f,d] = vl_sift(single(rgb2gray(imread(keypoints{i,1}))),'PeakThresh',sift_thresh);  
@@ -79,12 +81,12 @@ if(step1)
 %     else
         save vl_keypoints keypoints
 %     end
-% figure()
-%   imshow(imread(keypoints{image1,1}))
-%    hold on
-%     x1 = keypoints{image1,2};
-%     y1 = keypoints{image1,3};
-%     scatter(x1,y1)
+figure()
+  imshow(imread(keypoints{image1,1}))
+   hold on
+    x1 = keypoints{image1,2};
+    y1 = keypoints{image1,3};
+    scatter(x1,y1,10,keypoints{image1,6},'.')
 end
 
 
@@ -146,11 +148,10 @@ if(step3)
         y2 = keypoints{i+1,3}(matches{i,1}(2,:));
         [xn1,yn1,T1] = normalize_points(x1,y1);
         [xn2,yn2,T2] = normalize_points(x2,y2);
-      
       % apply 8 point ransac algorithm
       % [F, inliers] = fundamental_ransac(xn1,yn1,xn2,yn2,ransac_iters,ransac_thresh);
 %       FRD = T2' * F * T1; 
-        [FRD, inliers] = estimateFundamentalMatrix([x1',y1'],[x2',y2'],'method','RANSAC','NumTrials',2000,'DistanceThreshold',ransac_thresh);
+        [FRD, inliers] = estimateFundamentalMatrix([x1',y1'],[x2',y2'],'method','RANSAC','NumTrials',ransac_iters,'DistanceThreshold',ransac_thresh);
         matches{i,2} = inliers';
         fprintf(strcat(num2str(length(find(inliers)))+" inliers found. \n"))
     end
@@ -162,11 +163,11 @@ if(step3)
         y2 = keypoints{1,3}(matches{19,1}(2,:));
         [xn1,yn1,T1] = normalize_points(x1,y1);
         [xn2,yn2,T2] = normalize_points(x2,y2);
-      
-      % apply 8 point ransac algorithm
+   
+        % apply 8 point ransac algorithm
       % [F, inliers] = fundamental_ransac(xn1,yn1,xn2,yn2,ransac_iters,ransac_thresh);
 %       FRD = T2' * F * T1; 
-        [FRD, inliers] = estimateFundamentalMatrix([x1',y1'],[x2',y2'],'method','RANSAC','NumTrials',2000,'DistanceThreshold',ransac_thresh);
+        [FRD, inliers] = estimateFundamentalMatrix([x1',y1'],[x2',y2'],'method','RANSAC','NumTrials',ransac_iters,'DistanceThreshold',ransac_thresh);
         matches{19, 2} = inliers';
         fprintf(strcat(num2str(length(find(inliers)))+" inliers found. \n"))
         % save data
@@ -299,12 +300,14 @@ if(step6)
     end
     tic
     % Complete 3D model
-    complete_model = model_stitching(triple_models, quad_models);
+    [complete_model, colors] = model_stitching(triple_models, quad_models);
     toc
     if(own_algorithm)
         save own_complete_model complete_model
+        save colors colors
     else
         save vl_complete_model complete_model
+        save colors colors
     end
 end
 
@@ -329,17 +332,24 @@ if(step8)
 %% Surface plot of complete model
     if(own_algorithm)
         load own_complete_model
+        load colors
     else
         load vl_complete_model
+        load colors
     end
     
 %     % Plot 3D scatter plot of the complete model
+% figure()
+% scatter3(complete_model(1,:), complete_model(2,:), complete_model(3,:),'.b')
+
 figure()
-     scatter3(complete_model(1,:), complete_model(2,:), complete_model(3,:),'.b')
+scatter3(complete_model(1,:), complete_model(2,:), -complete_model(3,:),[],colors,'.')
+
 % [X,Y] = meshgrid(round(complete_model(1,:)), round(complete_model(2,:)));
 x = complete_model(1,:);
 y = complete_model(2,:);
 z = complete_model(3,:);
+rgb = complete_model();
 % x = x - min(x);
 % y = y - min(y);
 % z = z -min(z);
