@@ -15,14 +15,12 @@ clear all;
 
 %% Tunable parameters
 harris_scales       = 22; % determines how many scales the image is checked for
-harris_threshold    = 0.0001;
+harris_threshold    = 0.0005;
 nearest_neighbour   = 0.80;
 sift_thresh         = 0.75;
 ransac_iters        = 10000;
 ransac_thresh       = 100;
-
-own_algorithm       = 0; % Use sift feature detection and matching (0) or own algorithm (1)  
-extract_feats       = 0; % Use the extract features program 
+ 
 step1               = 0; % Perform feature detection
 step2               = 0; % Perform feature matching
 step3               = 0; % Apply normalized 8-point Ransac to find best matches
