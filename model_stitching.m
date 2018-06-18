@@ -14,7 +14,7 @@
 %   - Bas Buller 4166566
 %   - Rick Feith 4218272
 
-function [quad_order,triple_order] = model_stitching(triple_models, quad_models)
+function [complete_model, color] = model_stitching(triple_models, quad_models)
     % Find biggest four view model, set as starting point
     quad_order = [];
     triple_order = [];
@@ -27,20 +27,19 @@ function [quad_order,triple_order] = model_stitching(triple_models, quad_models)
         end
     end
 
-    quad_order = [quad_order ind];
 
     sign = 0;
     function [top, bottom] = set_top_bottom(ind,sign,top,bottom)
     if sign == 0
-        if ind ~= 1 && ind ~= 19
+        if (ind ~= 1 && ind ~= 19)
             top = ind+1;
             bottom = ind-1;
         elseif ind ==1
             top = 2;
             bottom = 19;
         else
-            top = 1
-            bottom = 18
+            top = 1;
+            bottom = 18;
         end
     elseif sign >0
         if top ~= 19
@@ -57,176 +56,189 @@ function [quad_order,triple_order] = model_stitching(triple_models, quad_models)
     end
     end
 
+    
     [top,bottom]  =set_top_bottom(ind,sign,0,0);
-
+    quad_order = [quad_order ind];
     triple_order = [triple_order ind top];
-
-    for i = 1:max(size(quad_models))
+    
+    for i = 2:max(size(quad_models))
         if (size(quad_models{top,1},2) >= size(quad_models{bottom,1},2))
             sign = 1;
-            if (size(quad_models{top,1},2)==0
+            if (size(quad_models{top,1},2)==0)
+                quad_order = [quad_order top]; 
                 top = set_top_bottom(ind,sign, top,bottom);
-                fprintf("Not enough matches to stitch models. \n")
-            else
                 triple_order = [triple_order top];
-                top = set_top_bottom(ind,sign, top,bottom);
+                fprintf(strcat("Not enough matches to stitch models, lenght order: ", num2str(length(quad_order)), "\n"))
+            else
                 quad_order = [quad_order top];
+                top = set_top_bottom(ind,sign, top,bottom);
+                triple_order = [triple_order top];
             end
         elseif (size(quad_models{top,1},2) < size(quad_models{bottom,1},2))
             sign = -1;
+            quad_order = [quad_order bottom];
             triple_order = [triple_order bottom];
             [~, bottom] = set_top_bottom(ind,sign,top,bottom);
-            quad_order = [quad_order bottom];
+           
         end
     end
-    
-    % Determine order of matching models
-%     order = [ind:max(size(quad_models)) 1:ind];
+    triple_order = triple_order(1:19);
+    track_bottom = quad_order(1);
     
     % Preassign cell array for uodated models
-%     updated_triple_models = cell(max(size(triple_models)), 1);
-%     updated_quad_models = cell(max(size(quad_models)), 1);
-    
+     updated_triple_models = cell(max(size(triple_models)), 1);
+     updated_quad_models = cell(max(size(quad_models)), 1);
+     color = [];
     
 %% Update first two views
-%     % First quad view model is not transformed
-%     updated_quad_models(ind) = {quad_models{ind, 1}};
-%     
-%     % Assign temporary working variables
-%     if(ind == length(triple_models))
-%         triple = triple_models{1, 1};
-%     else
-%         triple = triple_models{(ind+1), 1};
-%     end
-%     quad = quad_models{ind, 1};
-%         
-%     % Find matching points between three and four view models
-%     if(ind == length(triple_models))
-%         match_triple = triple_models{1, 2};
-%         color = triple_models{1,3};
-%     else
-%         match_triple = triple_models{(ind+1), 2};
-%         color = triple_models{ind+1,3};
-%     end        
-%     match_quad = quad_models{ind, 2}(2:4, :);
-%         
-%     % Find intersection of points between four and three view
-%     [~, ~, IB] = intersect(match_quad', match_triple', 'rows', 'stable');
-%      if (size(quad') ~= size(triple(:,IB)'))
-%          fprintf("sizes mismatch")
-%      end
-%     % Procrustes with matching points between three and four view
-%     [~, ~, trans] = procrustes(quad', triple(:, IB)');
-%     
-%     % Apply transform to entire three view model and save in cell array
-%     new_triple = trans.b * triple' * trans.T + trans.c(1, :);
-%     if(ind == length(triple_models))
-%         updated_triple_models(1) = {new_triple'};
-%     else
-%         updated_triple_models(ind+1) = {new_triple'};
-%     end
-%     
-%     % Final, complete 3D point model
-%     complete_model = [new_triple'];
-% %     complete_model = [quad_models{ind, 1} new_triple'];
-%     
-%     
-% %% Loop over remaining views
-%     % Loop over models to determine procrustes transforms, first fit three
-%     % view to four view, next fir four view to three view.
-%     for i = 2:length(order)-1
-%         if size(quad_models{order(i),1},2)
-%         % Assign temporary working variables
-%         triple = updated_triple_models{order(i),1};
-%         quad = quad_models{order(i),1};
-%         
-%         match_triple = triple_models{order(i), 2};
-%         match_quad = quad_models{order(i), 2}(1:3, :);
-%         
-%         
-%         % Find intersection of points between four and three view
-%         [~, ~, IB] = intersect(match_quad', match_triple', 'rows', 'stable');
-%         
-%          if (size(quad') ~= size(triple(:,IB)'))
-%              fprintf("sizes mismatch")
-%         end
-%         % Procrustes with matching points between three and four view
-%         [~, new_quad, ~] = procrustes(triple(:, IB)', quad');
-%         new_quad = new_quad';
-%         
-%         % Save new quad view points
-%         updated_quad_models(order(i)) = {new_quad};
-%         
-%         
-%         % Reassign temporary working variables
-%         triple = triple_models{order(i+1),1};
-%         quad = new_quad;
-%         color_temp = triple_models{order(i+1),3};
-%         
-%         match_triple = triple_models{order(i+1), 2};
-%         match_quad = quad_models{order(i), 2}(2:4, :);
-%         
-%         % Find intersection of points between four and three view
-%         [~, ~, IB] = intersect(match_quad', match_triple', 'rows', 'stable');
-%         
-%         if (size(quad') ~= size(triple(:,IB)'))
-%              fprintf("sizes mismatch")
-%         end       
-%         % Procrustes with matching points between three and four view
-%         [~, ~, trans] = procrustes(quad', triple(:, IB)');
-%         
-%         % Apply transform to entire three view model and save in cell array
-%         new_triple = trans.b * triple' * trans.T + trans.c(1, :);
-%         new_triple = new_triple';
-%         updated_triple_models(order(i+1)) = {new_triple};
-%         
-%         % Append transformed models to the complete model
-%         complete_model = [complete_model updated_triple_models{order(i+1)}];
-%         color = [color; color_temp];
-% %         complete_model = [complete_model updated_quad_models{order(i)} updated_triple_models{order(i+1)}];
-%         else
-%             fprintf("Quad model is not dense enough, skipping quad model \n")
-%             % Assign temporary working variables
-%         triple = updated_triple_models{order(i),1};
-%      
-%         
-%         match_triple = triple_models{order(i), 2};
-%         match_quad = quad_models{order(i), 2}(1:3, :);
-%         save temp
-%         % Find intersection of points between four and three view
-%         [~, ~, IB] = intersect(match_quad', match_triple', 'rows', 'stable');
-%         
-%         % Procrustes with matching points between three and four view
-%         [~, new_quad, ~] = procrustes(triple(:, IB)', quad');
-%         new_quad = new_quad';
-%         
-%         % Save new quad view points
-%         updated_quad_models(order(i)) = {new_quad};
-%         
-%         
-%         % Reassign temporary working variables
-%         triple = triple_models{order(i+1),1};
-%         quad = new_quad;
-%         
-%         match_triple = triple_models{order(i+1), 2};
-%         match_quad = quad_models{order(i), 2}(2:4, :);
-%         
-%         % Find intersection of points between four and three view
-%         [~, ~, IB] = intersect(match_quad', match_triple', 'rows', 'stable');
-%         
-%         % Procrustes with matching points between three and four view
-%         [~, ~, trans] = procrustes(quad', triple(:, IB)');
-%         
-%         % Apply transform to entire three view model and save in cell array
-%         new_triple = trans.b * triple' * trans.T + trans.c(1, :);
-%         new_triple = new_triple';
-%         updated_triple_models(order(i+1)) = {new_triple};
-%         
-%         % Append transformed models to the complete model
-%         complete_model = [complete_model updated_triple_models{order(i+1)}];
-%     end
-%         
-% end
+    % First quad view model is not transformed
+    updated_quad_models(quad_order(1)) = {quad_models{quad_order(1), 1}};
+    direction = 1;
+    % Assign temporary working variables
+    quad = quad_models{quad_order(1), 1};
+    triple = triple_models{triple_order(1),1};
+    
+    % Find matching points between three and four view models
+    match_triple = triple_models{triple_order(1), 2};   
+    match_quad = quad_models{quad_order(1), 2}(1:3, :);
+    size(match_triple)
+    size(match_quad)
+    % save color values
+    color_triple = triple_models{triple_order(1),3};
+    color_quad = quad_models{quad_order(1),3};
+        
+    % Find intersection of points between four and three view
+    [~, ~, IB] = intersect(match_quad', match_triple', 'rows', 'stable');
+    if (size(quad') ~= size(triple(:,IB)'))
+         fprintf("sizes mismatch")
+    end
+    
+    % Procrustes with matching points between three and four view
+    [~, ~, trans] = procrustes(quad', triple(:, IB)');
+    
+    % Apply transform to entire three view model and save in cell array
+    new_triple = trans.b * triple' * trans.T + trans.c(1, :);
+    updated_triple_models(triple_order(1)) = {new_triple'};
+
+    
+    % Final, complete 3D point model
+    complete_model = [new_triple'];
+    color = [color; color_triple];
+    
+    
+%% Loop over remaining views
+    % Loop over models to determine procrustes transforms, first fit three
+    % view to four view, next fir four view to three view.
+    for i = 2:length(quad_order)
+        % Assign temporary working variables 
+        fprintf(strcat("Appending triple model ", num2str(triple_order(i)), " to quad model ", num2str(quad_order(i-1)),", direction: ",num2str(direction),"\n"))
+        triple = triple_models{triple_order(i),1};
+        quad = updated_quad_models{quad_order(i-1),1};
+        
+        match_triple = triple_models{triple_order(i), 2};
+        if direction == 1
+            match_quad = quad_models{quad_order(i-1),2}(2:4,:);
+        else
+            match_quad = quad_models{quad_order(i-1),2}(1:3,:);
+        end
+        
+        color_temp = triple_models{triple_order(i),3};
+        
+        % Find intersection of points between four and three view
+        [~, ~, IB] = intersect(match_quad', match_triple', 'rows', 'stable');
+        
+         if (size(quad') ~= size(triple(:,IB)'))
+             fprintf("sizes mismatch")
+        end
+        % Procrustes with matching points between three and four view
+        [~, ~, trans] = procrustes(quad', triple(:, IB)');
+   
+        % Apply transform to entire three view model and save in cell array
+        new_triple = trans.b * triple' * trans.T + trans.c(1, :);
+        
+        
+        % Save models
+        updated_triple_models(triple_order(i)) = {new_triple'};
+        complete_model = [complete_model new_triple'];
+        color = [color; color_temp];
+        
+        save temp
+        
+        if size(quad_models{quad_order(i)})
+        % Reassign temporary working variables
+            if quad_order(i)==triple_order(i)
+                direction = 1;
+                triple = new_triple';
+                quad = quad_models{quad_order(i),1};
+
+                match_quad = quad_models{quad_order(i), 2}(1:3, :);
+
+                % Find intersection of points between four and three view
+                [~, ~, IB] = intersect(match_quad', match_triple', 'rows', 'stable');
+
+                if (size(quad') ~= size(triple(:,IB)'))
+                     fprintf("sizes mismatch")
+                end     
+
+                % Procrustes with matching points between three and four view
+                [~, new_quad,~ ] = procrustes( triple(:, IB)',quad');
+
+                % Apply transform to entire quad view model and save in cell array
+                updated_quad_models(quad_order(i)) = {new_quad'};
+
+            elseif (quad_order(i)+1)==track_bottom;
+                direction = 0;
+                three_index  = find(triple_order==track_bottom);
+                track_bottom = quad_order(i);
+                triple = updated_triple_models{triple_order(three_index)};
+                quad = quad_models{quad_order(i),1};
+
+                match_quad = quad_models{quad_order(i), 2}(2:4, :);
+                match_triple = triple_models{triple_order(three_index),2};
+                % Find intersection of points between four and three view
+                [~, ~, IB] = intersect(match_quad', match_triple', 'rows', 'stable');
+
+                if (size(quad') ~= size(triple(:,IB)'))
+                     fprintf("sizes mismatch")
+                end     
+
+                % Procrustes with matching points between three and four view
+                [~, new_quad,~ ] = procrustes( triple(:, IB)',quad');
+
+                % Apply transform to entire quad view model and save in cell array
+                updated_quad_models(quad_order(i)) = {new_quad'};
+
+            elseif (find(triple_order(1:i)==quad_order(i)))
+                direction = 1;
+                three_index = find(triple_order(1:i)==quad_order(i));
+                triple = updated_triple_models{triple_order(three_index)};
+                quad = quad_models{quad_order(i),1};
+
+                match_quad = quad_models{quad_order(i), 2}(1:3, :);
+                match_triple = triple_models{triple_order(three_index),2};
+                % Find intersection of points between four and three view
+                [~, ~, IB] = intersect(match_quad', match_triple', 'rows', 'stable');
+                save temp
+                if (size(quad') ~= size(triple(:,IB)'))
+                     fprintf("sizes mismatch")
+                end     
+
+                % Procrustes with matching points between three and four view
+                [~, new_quad,~ ] = procrustes( triple(:, IB)',quad');
+
+                % Apply transform to entire quad view model and save in cell array
+                updated_quad_models(quad_order(i)) = {new_quad'}; 
+            else
+                fprinf("Unknown scenaria for procrustes joining. \n")
+            end
+        else
+            fprintf("Quad model is empty \n")
+            break
+        end
+        
+        
+        
+end
 end
 
 

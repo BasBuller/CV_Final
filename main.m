@@ -29,7 +29,7 @@ step4               = 0; % Determine point view matrix
 step5               = 0; % 3D coordinates for 3 and 4 consecutive images
 step6               = 1; % Procrustes analysis
 step7               = 0; % Bundle adjustment
-step8               = 0; % Surface plot of complete model
+step8               = 1; % Surface plot of complete model
 plots               = 0; % Show example plots
 image1              = 1;% Which images are plotted, this number indicates the left image
 
@@ -313,7 +313,7 @@ if(step6)
     end
     
     % Complete 3D model
-    [quad_order, triple_order] = model_stitching(triple_models, quad_models);
+    [complete_model, colors] = model_stitching(triple_models, quad_models);
     
     if(own_algorithm)
         save own_complete_model complete_model
@@ -356,7 +356,7 @@ if(step8)
 % scatter3(complete_model(1,:), complete_model(2,:), complete_model(3,:),'.b')
 
 figure()
-scatter3(complete_model(1,:), complete_model(2,:), complete_model(3,:),[],colors,'.')
+scatter3(complete_model(1,:), -complete_model(2,:), -complete_model(3,:),[],colors,'.')
 
 % [X,Y] = meshgrid(round(complete_model(1,:)), round(complete_model(2,:)));
 x = complete_model(1,:);
