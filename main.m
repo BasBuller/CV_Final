@@ -10,7 +10,7 @@
 %   -Bas Buller 4166566
 %   -Rick Feith 4218272
 
-clear all;  
+close all; clear all; clc;
 
 
 %% Tunable parameters
@@ -21,19 +21,63 @@ sift_thresh         = 0.75;
 ransac_iters        = 10000;
 ransac_thresh       = 100;
  
+% switches per step
 step1               = 0; % Perform feature detection
+step1_robot         = 0; % Perform feature detection with external feature detector
+step1_vlsift        = 0; % Perform feature detection using vl_sift
 step2               = 0; % Perform feature matching
-step3               = 0; % Apply normalized 8-point Ransac to find best matches
+step2_vlmatch       = 0; % Perform feature matching using vl_ubcmatch
+step3               = 0; % Apply normalized 8-point RANSAC to find best matches
+step3_matlab        = 0; % Apply normalized 8-point RANSAC to find best matches using MATLAB algorithm
 step4               = 0; % Determine point view matrix
 step5               = 0; % 3D coordinates for 3 and 4 consecutive images
 step6               = 0; % Procrustes analysis
 step7               = 0; % Bundle adjustment
-step8               = 1; % Surface plot of complete model
-plots               = 0; % Show example plots
-image1              = 14; % Which images are plotted, this number indicates the left image
+step8               = 0; % Surface plot of complete model
+
+% example plots
+plots               = 0; % Show example plot of the keypoints found
+image_plot          = 14; % Which images are plotted, this number indicates the left image
 
 if(step1)
 %% Step 1: create list of images, Detect feature points and create Sift descriptor
+    fprintf('Perform feature point detection');
+
+    % Create complete data cell
+    % | name | x | y | s | d | matches | vl_Sift matches | RANSAC matches
+    keypoints = {};
+    folder_name = 'modelCastlePNG';
+
+    % Create list of images
+    keypoints(:,1) = loaddata(folder_name);
+    fprintf("Files loaded into filenames \n")
+    
+    % Detect feature points and extract sift features
+    num_of_im = length(keypoints);
+    for i = 1:num_of_im
+        fprintf(strcat("Starting image ",num2str(i)," of ",num2str(num_of_im)," \n"))
+        [s,r,c] = extractfeatures(keypoints{i,1},harris_scales,harris_threshold);
+            
+        % Create sift Descriptor
+        [x,y,d] = sift_descriptor(keypoints{i,1},s,r,c);
+        keypoints(i,2) = {x};
+        keypoints(i,3) = {y};
+        keypoints(i,4) = {s};
+        keypoints(i,5) = {d};
+        keypoints(i,6) = {impixel(imread(keypoints{i,1}),x,y)./255};
+        
+        % Print progression
+        fprintf(strcat(num2str(length(x))+" keypoints found. \n")
+    end
+    
+    save keypoints keypoints
+end
+
+
+if(step1_robot)
+%% Step 1: create list of images, Detect feature points and create Sift descriptor using robot script
+    fprintf('Perform feature point detection using robot script');
+
     % create complete data cell
     % | name | x | y | s | d | matches | vl_Sift matches | RANSAC matches
     keypoints = {};
@@ -47,333 +91,284 @@ if(step1)
     num_of_im = length(keypoints);
     for i = 1:num_of_im
         fprintf(strcat("Starting image ",num2str(i)," of ",num2str(num_of_im)," \n"))
-%         if(own_algorithm)
-%             [s,r,c] = extractfeatures(keypoints{i,1},harris_scales,harris_threshold);
-            [x1 y1 a1 b1 c1 desc1 x2 y2 a2 b2 c2 desc2] = extract_features2(keypoints{i,1},0);
+        [x1 y1 a1 b1 c1 desc1 x2 y2 a2 b2 c2 desc2] = extract_features2(keypoints{i,1},0);
             
-% %            create sift Descriptor
-%              [x,y,d] = sift_descriptor(keypoints{i,1},s,r,c);
-%             keypoints(i,2) = {x};
-%             keypoints(i,3) = {y};
-%             keypoints(i,4) = {s};
-%             keypoints(i,5) = {d};
-%             fprintf(strcat(num2str(length(x))+" keypoints found. \n"))
-            x = [x1' x2'];
-            y = [y1' y2'];
-            keypoints(i,2) = {x};
-            keypoints(i,3) = {y};
-            keypoints(i,4) = {[a1' b1' c1']};
-            keypoints(i,5) = {[desc1' desc2']};
-            keypoints(i,6) = {impixel(imread(keypoints{i,1}),x,y)./255};
-            fprintf(strcat(num2str(length([x1' x2']))+" keypoints found. \n"))
-            
-%         else % using only vl_sift
-%             [f,d] = vl_sift(single(rgb2gray(imread(keypoints{i,1}))),'PeakThresh',sift_thresh);  
-%             keypoints(i,2) = {f(1,:)};
-%             keypoints(i,3) = {f(2,:)};
-%             keypoints(i,4) = {f(3,:)};
-%             keypoints(i,5) = {d};
-%         end
+        %create sift Descriptor
+        [x,y,d] = sift_descriptor(keypoints{i,1},s,r,c);
+        x = [x1' x2'];
+        y = [y1' y2'];
+        keypoints(i,2) = {x};
+        keypoints(i,3) = {y};
+        keypoints(i,4) = {[a1' b1' c1']};
+        keypoints(i,5) = {[desc1' desc2']};
+        keypoints(i,6) = {impixel(imread(keypoints{i,1}),x,y)./255};
+        fprintf(strcat(num2str(length([x1' x2']))+" keypoints found. \n"))
     end
+    
+    save keypoints keypoints
+end
 
-%     if(own_algorithm)
-%         save own_keypoints keypoints
-%     else
-        save vl_keypoints keypoints
-%     end
-figure()
-  imshow(imread(keypoints{image1,1}))
-   hold on
-    x1 = keypoints{image1,2};
-    y1 = keypoints{image1,3};
-    scatter(x1,y1,10,keypoints{image1,6},'.')
+
+if(step1_vlsift)
+%% Step 1: create list of images, Detect feature points and create Sift descriptor using vl_sift only
+    fprintf('Perform featurepoint detection using vl_sift only');
+
+    % Create complete data cell
+    % | name | x | y | s | d | matches | vl_Sift matches | RANSAC matches
+    keypoints = {};
+    folder_name = 'modelCastlePNG';
+
+    % Create list of images
+    keypoints(:,1) = loaddata(folder_name);
+    fprintf("Files loaded into filenames \n")
+    
+    % Detect feature points and extract sift features
+    num_of_im = length(keypoints);
+    for i = 1:num_of_im
+        fprintf(strcat("Starting image ",num2str(i)," of ",num2str(num_of_im)," \n"))
+        [f,d] = vl_sift(single(rgb2gray(imread(keypoints{i,1}))),'PeakThresh',sift_thresh);  
+        keypoints(i,2) = {f(1,:)};
+        keypoints(i,3) = {f(2,:)};
+        keypoints(i,4) = {f(3,:)};
+        keypoints(i,5) = {d};
+        keypoints(i,6) = {impixel(imread(keypoints{i,1}),x,y)./255};
+        fprintf(strcat(num2str(length(f(1,:)))+" keypoints found. \n"))
+    end
+    
+    save keypoints keypoints
 end
 
 
 if(step2)
 %% step 2: Look for matches in feature points    
-    if(own_algorithm)
-        load own_keypoints
-    else
-        load vl_keypoints
-    end
+    fprintf('Perform feature matching');
+    
+    load keypoints
     num_of_im = size(keypoints,1);
     matches   = {};
     
     % match each image with its consecutive image and write to data
     for i = 1:(num_of_im-1)
         fprintf(strcat("Started Matching on Image ", num2str(i)," \n"));
-        if(own_algorithm)
-            match = match_features(keypoints{i,2},keypoints{i,3},keypoints{i,5},keypoints{i+1,2},keypoints{i+1,3},keypoints{i+1,5},nearest_neighbour);
-            matches(i,1) = {match};
-        else
-            [match, scores]  = vl_ubcmatch(keypoints{i,5},keypoints{i+1,5},1/nearest_neighbour );
-            matches(i,1) = {match};
-        end
+        match = match_features(keypoints{i,2},keypoints{i,3},keypoints{i,5},keypoints{i+1,2},keypoints{i+1,3},keypoints{i+1,5},nearest_neighbour);
+        matches(i,1) = {match};
         fprintf(strcat(num2str(length(match(1,:)))+" matches found. \n"))
     end
 
     % perform match between last and first image and write to data
-    fprintf(("Started Matching on Image 19 \n"));
-    if(own_algorithm)
-        match = match_features(keypoints{19,2},keypoints{19,3},keypoints{19,5},keypoints{1,2},keypoints{1,3},keypoints{1,5},nearest_neighbour);
-        matches(19,1) = {match};
-        save own_matches matches
-    else
-        [match, scores] = vl_ubcmatch(keypoints{19,5},keypoints{1,5},1/nearest_neighbour );
-        matches(19,1) = {match};
-        save vl_matches matches
+    fprintf(("Started matching on last image \n"));
+    match = match_features(keypoints{num_im,2},keypoints{num_im,3},keypoints{num_im,5},keypoints{1,2},keypoints{1,3},keypoints{1,5},nearest_neighbour);
+    matches(num_im,1) = {match};
+    fprintf(strcat(num2str(length(match(1,:)))+" matches found. \n"))
+    
+    save own_matches matches
+end
+
+
+if(step2_vlmatch)
+%% step 2: Look for matches in feature points using vl_ubcmatch
+    fprintf('Perform feature matching using vl_ubcmatch');
+    
+    load keypoints
+    num_of_im = size(keypoints,1);
+    matches   = {};
+    
+    % match each image with its consecutive image and write to data
+    for i = 1:(num_of_im-1)
+        fprintf(strcat("Started Matching on Image ", num2str(i)," \n"))
+        [match, scores]  = vl_ubcmatch(keypoints{i,5},keypoints{i+1,5},1/nearest_neighbour );
+        matches(i,1) = {match};
     end
     fprintf(strcat(num2str(length(match(1,:)))+" matches found. \n"))
+    
+    % perform match between last and first image and write to data
+    fprintf(("Started matching on last image \n"));
+    [match, scores] = vl_ubcmatch(keypoints{num_im,5},keypoints{1,5},1/nearest_neighbour );
+    matches(num_im,1) = {match};
+    fprintf(strcat(num2str(length(match(1,:)))+" matches found. \n"))
+    
+    save vl_matches matches
 end
 
 
 if(step3)
 %% Step 3: Apply 8-points RANSAC algorithm
-
-%load data
-    if(own_algorithm)
-        load own_keypoints
-        load own_matches
-    else
-        load vl_keypoints
-        load vl_matches
-    end
+    fprintf('Apply 8-point RANSAC');
     
+    load keypoints
+    num_of_im = size(keypoints,1);
+    
+    % Loop over all images except the last one
     for i = 1:(length(keypoints)-1)
-    % normalize data
+        % normalize data
         x1 = keypoints{i,2}(matches{i,1}(1,:));
         y1 = keypoints{i,3}(matches{i,1}(1,:));
         x2 = keypoints{i+1,2}(matches{i,1}(2,:));
         y2 = keypoints{i+1,3}(matches{i,1}(2,:));
         [xn1,yn1,T1] = normalize_points(x1,y1);
         [xn2,yn2,T2] = normalize_points(x2,y2);
-      % apply 8 point ransac algorithm
-      % [F, inliers] = fundamental_ransac(xn1,yn1,xn2,yn2,ransac_iters,ransac_thresh);
-%       FRD = T2' * F * T1; 
+        
+        % apply 8 point ransac algorithm
+        [F, inliers] = fundamental_ransac(xn1,yn1,xn2,yn2,ransac_iters,ransac_thresh);
+        FRD = T2' * F * T1; 
+        fprintf(strcat(num2str(length(find(inliers)))+" inliers found. \n"))
+    end
+    
+    % Process last and first image
+    % normalize data
+    x1 = keypoints{num_im,2}(matches{num_im,1}(1,:));
+    y1 = keypoints{num_im,3}(matches{num_im,1}(1,:));
+    x2 = keypoints{1,2}(matches{num_im,1}(2,:));
+    y2 = keypoints{1,3}(matches{num_im,1}(2,:));
+    [xn1,yn1,T1] = normalize_points(x1,y1);
+    [xn2,yn2,T2] = normalize_points(x2,y2);
+   
+    % apply 8 point ransac algorithm
+    [F, inliers] = fundamental_ransac(xn1,yn1,xn2,yn2,ransac_iters,ransac_thresh);
+    FRD = T2' * F * T1; 
+    fprintf(strcat(num2str(length(find(inliers)))+" inliers found. \n"))
+    
+    % save data
+    save matches matches
+end
+
+
+if(step3_matlab)
+%% Step 3: Apply 8-points RANSAC algorithm using MATLAB fundamental matrix algorithm
+    fprintf('Apply 8-point RANSAC');
+    
+    load keypoints
+    num_of_im = size(keypoints,1);
+    
+    % Loop over all images except the last one
+    for i = 1:(length(keypoints)-1)
+        % normalize data
+        x1 = keypoints{i,2}(matches{i,1}(1,:));
+        y1 = keypoints{i,3}(matches{i,1}(1,:));
+        x2 = keypoints{i+1,2}(matches{i,1}(2,:));
+        y2 = keypoints{i+1,3}(matches{i,1}(2,:));
+        
+        % apply 8 point ransac algorithm
         [FRD, inliers] = estimateFundamentalMatrix([x1',y1'],[x2',y2'],'method','RANSAC','NumTrials',ransac_iters,'DistanceThreshold',ransac_thresh);
         matches{i,2} = inliers';
         fprintf(strcat(num2str(length(find(inliers)))+" inliers found. \n"))
     end
     
-        % normalize data
-        x1 = keypoints{19,2}(matches{19,1}(1,:));
-        y1 = keypoints{19,3}(matches{19,1}(1,:));
-        x2 = keypoints{1,2}(matches{19,1}(2,:));
-        y2 = keypoints{1,3}(matches{19,1}(2,:));
-        [xn1,yn1,T1] = normalize_points(x1,y1);
-        [xn2,yn2,T2] = normalize_points(x2,y2);
+    % Process last and first image
+    % normalize data
+    x1 = keypoints{num_im,2}(matches{num_im,1}(1,:));
+    y1 = keypoints{num_im,3}(matches{num_im,1}(1,:));
+    x2 = keypoints{1,2}(matches{num_im,1}(2,:));
+    y2 = keypoints{1,3}(matches{num_im,1}(2,:));
    
-        % apply 8 point ransac algorithm
-      % [F, inliers] = fundamental_ransac(xn1,yn1,xn2,yn2,ransac_iters,ransac_thresh);
-%       FRD = T2' * F * T1; 
-        [FRD, inliers] = estimateFundamentalMatrix([x1',y1'],[x2',y2'],'method','RANSAC','NumTrials',ransac_iters,'DistanceThreshold',ransac_thresh);
-        matches{19, 2} = inliers';
-        fprintf(strcat(num2str(length(find(inliers)))+" inliers found. \n"))
-        % save data
-    if(own_algorithm)
-        save own_matches matches
-    else
-        save vl_matches matches
-    end
-   
-%     % plotting results
-% [lines] = epipolarLine(FRD, [x1(inliers)',y1(inliers)']);
-% points = lineToBorderPoints(lines, size(imread(keypoints{2,1})));
-% % 
-% figure()
-% imshow(imread(keypoints{1,1}))
-% hold on
-% scatter(x1(inliers),y1(inliers),'r')
-% 
-% figure()
-% imshow(imread(keypoints{2,1}))
-% hold on
-% line(points(:,[1,3])',points(:,[2,4])');
-%     
-%     
-%     
-% end
+    % apply 8 point ransac algorithm 
+    [FRD, inliers] = estimateFundamentalMatrix([x1',y1'],[x2',y2'],'method','RANSAC','NumTrials',ransac_iters,'DistanceThreshold',ransac_thresh);
+    matches{19, 2} = inliers';
+    fprintf(strcat(num2str(length(find(inliers)))+" inliers found. \n"))
+    
+    % save data
+    save matches matches
 end
 
 
 if(plots)
-%% plot image for check using first 20 matches
-    if(own_algorithm)
-        load own_keypoints
-        load own_matches
-    else
-        load vl_keypoints
-        load vl_matches
-    end
+%% plot image for keypoint check
+    fprintf('Plot keypoints on image');
     
-    if(own_algorithm)
-        figure('name','1 and 2 with own algorithm')
-    else
-        figure('name','1 and 2 with vl_sift')
-    end
-    imshow([imread(keypoints{image1,1}) imread(keypoints{image1+1,1})])
-    hold on
-    x1 = keypoints{image1,2}(matches{image1,1}(1,matches{image1,2}));
-    y1 = keypoints{image1,3}(matches{image1,1}(1,matches{image1,2}));
-    x2 = size(imread(keypoints{image1,1}),2)+keypoints{image1+1,2}(matches{image1,1}(2,matches{image1,2}));
-    y2 = keypoints{image1+1,3}(matches{image1,1}(2,matches{image1,2}));
+    load keypoints
+    load matches
+    
+    figure('name', stract('image_', sprintf('%d', image_plot)));
 
-    scatter(x1,y1,'r')
-    scatter(x2,y2,'r')
-    line([x1;x2],[y1;y2],'color','b')
-    size(x1)
-    % figure('name','1 and 2 with vl_sift algorithm')
-    % imshow([imread(data{1,1}) imread(data{2,1})])
-    % hold on
-    % x1 = data{1,2}(data{1,7}(1,1:20));
-    % y1 = data{1,3}(data{1,7}(1,1:20));
-    % x2 = size(imread(data{1,1}),2)+data{2,2}(data{1,7}(2,1:20));
-    % y2 = data{2,3}(data{1,7}(2,1:20));
-    % 
-    % scatter(x1,y1,'r')
-    % scatter(x2,y2,'r')
-    % line([x1;x2],[y1;y2],'color','b')
+    imshow(imread(keypoints{image_plot ,1}));
+    hold on
+    x1 = keypoints{image_plot, 2};
+    y1 = keypoints{image_plot, 3};
+    color = keypoints{image_plot, 6};
+
+    scatter(x1, y1, 10, color, '.')
 end
 
 
 if(step4)
 %% Point view matrix
     fprintf('Find point view matrix');
-    if(own_algorithm)
-        load own_keypoints
-        load own_matches
-    else
-        load vl_keypoints
-        load vl_matches
-    end
+    
+    load keypoints
+    load matches
     
     % point view matrix
-    PVM = point_view_matrix(matches);
+    pvm = point_view_matrix(matches);
     
-    if(own_algorithm)
-        save own_pvm PVM
-    else
-        save vl_pvm PVM
-    end
+    save pvm pvm
 end
 
 
 if(step5)
 %% 3D coordinates for 3 and 4 consecutive images
-    if(own_algorithm)
-        load own_keypoints
-        load own_matches
-        load own_pvm
-    else
-        load vl_keypoints
-        load vl_matches
-        load vl_pvm
-    end
+    fprintf('Perform affine structure from motion to determine 3D coordinates');
+
+    load keypoints
+    load matches
+    load pvm
+
     skips = 0;
     % 3 consecutive images
     triple_im = [1:19; 2:19 1; 3:19 1 2];
     [triple_models,skips] = SfM(keypoints, PVM, triple_im,skips);
     skips
+    
     % 4 consecutive images
     quad_im = [1:19; 2:19 1; 3:19 1 2; 4:19 1:3];
     [quad_models,skips] = SfM(keypoints, PVM, quad_im,skips);
     skips
-    if(own_algorithm)
-        save own_triple_models triple_models
-        save own_quad_models quad_models
-    else
-        save vl_triple_models triple_models
-        save vl_quad_models quad_models
-    end
+    
+    save triple_models triple_models
+    save quad_models quad_models
 end
 
 
 if(step6)
 %% Procrustes analysis for complete 3D model
-    if(own_algorithm)
-        load own_triple_models
-        load own_quad_models
-    else
-        load vl_triple_models
-        load vl_quad_models
-    end
-    tic
+    fprintf('Preform procrustes analysis to build complete 3D model');
+
+    load own_triple_models
+    load own_quad_models
+
     % Complete 3D model
     [complete_model, colors] = model_stitching(triple_models, quad_models);
-    toc
-    if(own_algorithm)
-        save own_complete_model complete_model
-        save colors colors
-    else
-        save vl_complete_model complete_model
-        save colors colors
-    end
+
+    save complete_model complete_model
+    save colors colors
 end
 
 
 if(step7)
 %% Bundle Adjustment 
-    if(own_algorithm)
-        load own_complete_model
-        load own_pvm
-        load own_keypoints
-        load own_triple_models
-    else
-        load vl_complete_model
-        load vl_pvm
-        load vl_keypoints
-        load vl_triple_models
-    end
+    fprintf('Perform bundle adjustment');
+
+    load own_complete_model
+    load own_pvm
+    load own_keypoints
+    load own_triple_models
     
     ba_model = bundle_adjustment_complete(PVM, keypoints, triple_models);
     
-    if(own_algorithm)
-        save own_complete_model ba_model
-    else
-        save vl_complete_model ba_model
-    end
+    save ba_model ba_model
 end
 
 
 if(step8)
 %% Surface plot of complete model
-    if(own_algorithm)
-        load own_complete_model
-        load colors
-    else
-        load vl_complete_model
-        load colors
-    end
+    fprintf('Build surface plot of the complete model');
+
+    load own_complete_model
+    load colors
     
-%     % Plot 3D scatter plot of the complete model
-% figure()
-% scatter3(complete_model(1,:), complete_model(2,:), complete_model(3,:),'.b')
-
-figure()
-scatter3(complete_model(1,:), complete_model(2,:), -complete_model(3,:),[],colors,'.')
-
-% [X,Y] = meshgrid(round(complete_model(1,:)), round(complete_model(2,:)));
-x = complete_model(1,:);
-y = complete_model(2,:);
-z = complete_model(3,:);
-rgb = complete_model();
-% x = x - min(x);
-% y = y - min(y);
-% z = z -min(z);
-% model = zeros(ceil(max(y)),ceil(max(x)));
-% for i = 1: length(x)
-%     model(round(y(i))+1,round(x(i))+1) = z(i);
-%     
-% end
-% tri = delaunay(x,y);
-% trisurf(tri,x,y,z)
-% figure()
-% surf(X,Y,model)
+    % Plot 3D scatter plot of the complete model
+    figure('name', 'Final model');
+    scatter3(complete_model(1,:), complete_model(2,:), complete_model(3,:),'.b')
 end
-
-
-
 
 
 
