@@ -44,11 +44,11 @@ for i = 1:size(frames, 2)
         
         %normalize points
         for k = 1:2:(size(pts,1)-1)
-            x1 = pts(k,:);
-            y1 = pts(k+1,:);
-            [xn1,yn1]  = normalize_points(x1,y1);
-             pts(k,:) = xn1;
-             pts(k+1,:) = yn1;
+            x1 = pts(k,:) - mean(pts(k,:));
+            y1 = pts(k+1,:) - mean(pts(k+1,:));
+%             [xn1,yn1]  = normalize_points(x1,y1);
+             pts(k,:) = x1;
+             pts(k+1,:) = y1;
         end 
         
         % Determine SVD composition and reduce to rank 3

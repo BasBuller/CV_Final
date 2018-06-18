@@ -15,21 +15,21 @@ clear all;
 
 %% Tunable parameters
 harris_scales       = 22; % determines how many scales the image is checked for
-harris_threshold    = 0.0001;
+harris_threshold    = 0.00005;
 nearest_neighbour   = 0.87;
 sift_thresh         = 0.75;
 ransac_iters        = 10000;
-ransac_thresh       = 100;
+ransac_thresh       = 10;
 
 own_algorithm       = 0; % Use sift feature detection and matching (0) or own algorithm (1)      
 step1               = 0; % Perform feature detection
 step2               = 0; % Perform feature matching
 step3               = 0; % Apply normalized 8-point Ransac to find best matches
 step4               = 0; % Determine point view matrix
-step5               = 1; % 3D coordinates for 3 and 4 consecutive images
+step5               = 0; % 3D coordinates for 3 and 4 consecutive images
 step6               = 1; % Procrustes analysis
 step7               = 0; % Bundle adjustment
-step8               = 1; % Surface plot of complete model
+step8               = 0; % Surface plot of complete model
 plots               = 0; % Show example plots
 image1              = 1;% Which images are plotted, this number indicates the left image
 
@@ -49,24 +49,25 @@ if(step1)
     for i = 1:num_of_im
         fprintf(strcat("Starting image ",num2str(i)," of ",num2str(num_of_im)," \n"))
 %         if(own_algorithm)
-%             [s,r,c] = extractfeatures(keypoints{i,1},harris_scales,harris_threshold);
-            [x1 y1 a1 b1 c1 desc1 x2 y2 a2 b2 c2 desc2] = extract_features2(keypoints{i,1},0);
+            [s,r,c] = extractfeatures(keypoints{i,1},harris_scales,harris_threshold);
+%             [x1 y1 a1 b1 c1 desc1 x2 y2 a2 b2 c2 desc2] = extract_features2(keypoints{i,1},0);
             
 % %            create sift Descriptor
-%              [x,y,d] = sift_descriptor(keypoints{i,1},s,r,c);
-%             keypoints(i,2) = {x};
-%             keypoints(i,3) = {y};
-%             keypoints(i,4) = {s};
-%             keypoints(i,5) = {d};
-%             fprintf(strcat(num2str(length(x))+" keypoints found. \n"))
-            x = [x1' x2'];
-            y = [y1' y2'];
+             [x,y,d] = sift_descriptor(keypoints{i,1},s,r,c);
             keypoints(i,2) = {x};
             keypoints(i,3) = {y};
-            keypoints(i,4) = {[a1' b1' c1']};
-            keypoints(i,5) = {[desc1' desc2']};
+            keypoints(i,4) = {s};
+            keypoints(i,5) = {d};
             keypoints(i,6) = {impixel(imread(keypoints{i,1}),x,y)./255};
-            fprintf(strcat(num2str(length([x1' x2']))+" keypoints found. \n"))
+            fprintf(strcat(num2str(length(x))+" keypoints found. \n"))
+%             x = [x1' x2'];
+%             y = [y1' y2'];
+%             keypoints(i,2) = {x};
+%             keypoints(i,3) = {y};
+%             keypoints(i,4) = {[a1' b1' c1']};
+%             keypoints(i,5) = {[desc1' desc2']};
+%             keypoints(i,6) = {impixel(imread(keypoints{i,1}),x,y)./255};
+%             fprintf(strcat(num2str(length([x1' x2']))+" keypoints found. \n"))
 %         else % using only vl_sift
 %             [f,d] = vl_sift(single(rgb2gray(imread(keypoints{i,1}))),'PeakThresh',sift_thresh);  
 %             keypoints(i,2) = {f(1,:)};
@@ -81,12 +82,7 @@ if(step1)
 %     else
         save vl_keypoints keypoints
 %     end
-figure()
-  imshow(imread(keypoints{image1,1}))
-   hold on
-    x1 = keypoints{image1,2};
-    y1 = keypoints{image1,3};
-    scatter(x1,y1,10,keypoints{image1,6},'.')
+
 end
 
 
@@ -198,7 +194,7 @@ end
 
 
 if(plots)
-%% plot image for check using first 20 matches
+%% plot image 
     if(own_algorithm)
         load own_keypoints
         load own_matches
@@ -207,22 +203,22 @@ if(plots)
         load vl_matches
     end
     
-    if(own_algorithm)
-        figure('name','1 and 2 with own algorithm')
-    else
-        figure('name','1 and 2 with vl_sift')
-    end
-    imshow([imread(keypoints{image1,1}) imread(keypoints{image1+1,1})])
-    hold on
-    x1 = keypoints{image1,2}(matches{image1,1}(1,matches{image1,2}));
-    y1 = keypoints{image1,3}(matches{image1,1}(1,matches{image1,2}));
-    x2 = size(imread(keypoints{image1,1}),2)+keypoints{image1+1,2}(matches{image1,1}(2,matches{image1,2}));
-    y2 = keypoints{image1+1,3}(matches{image1,1}(2,matches{image1,2}));
-
-    scatter(x1,y1,'r')
-    scatter(x2,y2,'r')
-    line([x1;x2],[y1;y2],'color','b')
-    size(x1)
+%     if(own_algorithm)
+%         figure('name','1 and 2 with own algorithm')
+%     else
+%         figure('name','1 and 2 with vl_sift')
+%     end
+%     imshow([imread(keypoints{image1,1}) imread(keypoints{image1+1,1})])
+%     hold on
+%     x1 = keypoints{image1,2}(matches{image1,1}(1,matches{image1,2}));
+%     y1 = keypoints{image1,3}(matches{image1,1}(1,matches{image1,2}));
+%     x2 = size(imread(keypoints{image1,1}),2)+keypoints{image1+1,2}(matches{image1,1}(2,matches{image1,2}));
+%     y2 = keypoints{image1+1,3}(matches{image1,1}(2,matches{image1,2}));
+% 
+%     scatter(x1,y1,'r')
+%     scatter(x2,y2,'r')
+%     line([x1;x2],[y1;y2],'color','b')
+%     size(x1)
     % figure('name','1 and 2 with vl_sift algorithm')
     % imshow([imread(data{1,1}) imread(data{2,1})])
     % hold on
@@ -234,6 +230,23 @@ if(plots)
     % scatter(x1,y1,'r')
     % scatter(x2,y2,'r')
     % line([x1;x2],[y1;y2],'color','b')
+    
+    im1 = imread(keypoints{image1,1});
+    im2 = imread(keypoints{image1+1,1});
+    x1 = (keypoints{image1,2}(matches{image1,1}(1,matches{image1,2})));
+    y1 = (keypoints{image1,3}(matches{image1,1}(1,matches{image1,2})));
+    x2 = (keypoints{image1+1,2}(matches{image1,1}(2,matches{image1,2})));
+    y2 = (keypoints{image1+1,3}(matches{image1,1}(2,matches{image1,2})));
+    color = keypoints{image1,6}((matches{image1,1}(1,matches{image1,2})),:);
+    figure()
+%   imshow(imread(keypoints{image1,1})
+    scatter(x1,-y1,10,color,'.')
+    
+    figure()
+
+    
+    showMatchedFeatures(im1, im2 ,[x1' y1'],[x2' y2'])
+
 end
 
 
@@ -298,10 +311,10 @@ if(step6)
         load vl_triple_models
         load vl_quad_models
     end
-    tic
+    
     % Complete 3D model
-    [complete_model, colors] = model_stitching(triple_models, quad_models);
-    toc
+    [quad_order, triple_order] = model_stitching(triple_models, quad_models);
+    
     if(own_algorithm)
         save own_complete_model complete_model
         save colors colors
@@ -343,7 +356,7 @@ if(step8)
 % scatter3(complete_model(1,:), complete_model(2,:), complete_model(3,:),'.b')
 
 figure()
-scatter3(complete_model(1,:), complete_model(2,:), -complete_model(3,:),[],colors,'.')
+scatter3(complete_model(1,:), complete_model(2,:), complete_model(3,:),[],colors,'.')
 
 % [X,Y] = meshgrid(round(complete_model(1,:)), round(complete_model(2,:)));
 x = complete_model(1,:);
