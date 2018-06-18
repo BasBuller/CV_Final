@@ -30,7 +30,7 @@ step4               = 0; % Determine point view matrix
 step5               = 0; % 3D coordinates for 3 and 4 consecutive images
 step6               = 0; % Procrustes analysis
 step7               = 0; % Bundle adjustment
-step8               = 0; % Surface plot of complete model
+step8               = 1; % Surface plot of complete model
 plots               = 0; % Show example plots
 image1              = 14; % Which images are plotted, this number indicates the left image
 
@@ -344,7 +344,7 @@ if(step8)
     end
     
     % Plot 3D scatter plot of the complete model
-    scatter3(complete_model(1,:), complete_model(2,:), complete_model(3,:));
+    scatter3(complete_model(3,:), complete_model(2,:), complete_model(1,:));
 end
 
 
