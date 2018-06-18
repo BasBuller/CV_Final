@@ -18,7 +18,7 @@
 function [models,skips] = SfM(keypoints, pvm, frames,skips)
 % Loop over all columns of the images matrix, such to cover all
 % combinations of 3 or 4 consecutive images
-models = cell(size(frames, 2), 2);
+models = cell(size(frames, 2), 3);
 
 for i = 1:size(frames, 2)
     % Determine the point coordinates to be used during SfM, results in
@@ -36,6 +36,7 @@ for i = 1:size(frames, 2)
     for j = 1:size(match, 1)
         pts((2*j-1),:) = keypoints{frames(j, i),2}(match(j, :)); 
         pts((2*j),:) = keypoints{frames(j,i),3}(match(j, :));
+        
     end
     
     % Remove mean
@@ -47,8 +48,12 @@ for i = 1:size(frames, 2)
     if(size(pts, 2) > 2)
         
         %normalize points
-        for k = 1:size(pts,1)
-            pts(k,:) = pts(k,:) - mean(pts(k,:));
+        for k = 1:2:(size(pts,1)-1)
+            x1 = pts(k,:);
+            y1 = pts(k+1,:);
+            [xn1,yn1]  = normalize_points(x1,y1);
+             pts(k,:) = xn1;
+             pts(k+1,:) = yn1;
         end 
         
         % Determine SVD composition and reduce to rank 3
@@ -67,7 +72,7 @@ for i = 1:size(frames, 2)
         A           = M(1:2, :);
         L0          = pinv(A'*A);
         options = optimoptions(@lsqnonlin, 'StepTolerance',1e-16,'OptimalityTolerance',1e-16,'FunctionTolerance',1e-16);
-        L           = lsqnonlin(@residuals, L0,ones(size(L0))*-1e-2,ones(size(L0))*1e-2,options);
+        L           = lsqnonlin(@residuals, L0,[],[],options);%ones(size(L0))*-1e-2,ones(size(L0))*1e-2,options);
     
         if sum(real(eig(L))<0)>0
             fprintf(strcat("Eigenvalues to small size: ",num2str(size(match,2)),", round: ",num2str(i)," \n"))
@@ -85,7 +90,7 @@ for i = 1:size(frames, 2)
         %Append to models cell array
         models(i,1) = {S};
         models(i,2) = {match};
-        
+        models(i,3) = {keypoints{frames(1,i),6}(match(1, :),:)};
     end
 end
 
