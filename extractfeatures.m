@@ -14,9 +14,10 @@
 %   -Rick Feith 4218272
 
 %%normalize harris function
-function [s,r,c] = normalizedHarris(img,loops,threshold)
+function [s,r,c] = extractfeatures(img,loops,threshold)
 %load image in grayscale
 img = (rgb2gray(imread(img)));
+
 
 %% loop over different sigma values and store r and c
 
@@ -29,9 +30,10 @@ sigmarange = [1.2.^(-9:1:(loops-10))]; % loop 1: 1.2^-4 .... loop n: 1.2^(loop-5
 for i = 1:1:loops
     li = zeros(sizeIm);
     sigma = sigmarange(i);
+    
     % detect cornerpoints for different sigmas
     [r,c] = harris(img,sigma,threshold) ;
-%     fprintf(strcat("harris loop ",num2str(i)," completed \n"))
+
     % attach value to cornerpoints
     Laplacian = imfilter(img, fspecial('log',[3 3],sigma),'replicate','same') .* (sigma^2);
     li(sub2ind(sizeIm,r,c)) = abs(Laplacian(sub2ind(sizeIm,r,c)));
@@ -55,5 +57,5 @@ for i = 1:1:loops
 end
 
 
- [r,c] = find(finalClean);
+[r,c] = find(finalClean);
 end
