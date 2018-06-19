@@ -33,7 +33,7 @@ step4               = 0; % Determine point view matrix
 step5               = 0; % 3D coordinates for 3 and 4 consecutive images
 step6               = 0; % Procrustes analysis
 step7               = 0; % Bundle adjustment
-step8               = 1; % Surface plot of complete model
+step8               = 0; % Surface plot of complete model
 
 % example plots
 plots               = 0; % Show example plot of the keypoints found
@@ -162,7 +162,7 @@ if(step2)
     matches(num_im,1) = {match};
     fprintf(strcat(num2str(length(match(1,:)))+" matches found. \n"))
     
-    save own_matches matches
+    save matches matches
 end
 
 
@@ -170,6 +170,7 @@ if(step2_vlmatch)
 %% step 2: Look for matches in feature points using vl_ubcmatch
     fprintf('Perform feature matching using vl_ubcmatch \n');
     
+    load matches
     load keypoints
     num_im = size(keypoints,1);
     matches   = {};
@@ -177,7 +178,7 @@ if(step2_vlmatch)
     % match each image with its consecutive image and write to data
     for i = 1:(num_im-1)
         fprintf(strcat("Started Matching on Image ", num2str(i)," \n"))
-        [match, scores]  = vl_ubcmatch(keypoints{i,5},keypoints{i+1,5},1/nearest_neighbour );
+        [match, ~]  = vl_ubcmatch(keypoints{i,5},keypoints{i+1,5},1/nearest_neighbour );
         matches(i,1) = {match};
         
         fprintf(strcat(num2str(length(match(1,:)))+" matches found. \n"))
@@ -185,11 +186,11 @@ if(step2_vlmatch)
     
     % perform match between last and first image and write to data
     fprintf(("Started matching on last image \n"));
-    [match, scores] = vl_ubcmatch(keypoints{num_im,5},keypoints{1,5},1/nearest_neighbour );
+    [match, ~] = vl_ubcmatch(keypoints{num_im,5},keypoints{1,5},1/nearest_neighbour );
     matches(num_im,1) = {match};
     fprintf(strcat(num2str(length(match(1,:)))+" matches found. \n"))
     
-    save vl_matches matches
+    save matches matches
 end
 
 
@@ -198,10 +199,13 @@ if(step3)
     fprintf('Apply 8-point RANSAC \n');
     
     load keypoints
+    load matches
     num_im = size(keypoints,1);
     
     % Loop over all images except the last one
     for i = 1:(length(keypoints)-1)
+        fprintf(strcat("Starting on image: ", sprintf("%d", i), "\n"));
+        
         % normalize data
         x1 = keypoints{i,2}(matches{i,1}(1,:));
         y1 = keypoints{i,3}(matches{i,1}(1,:));
@@ -217,6 +221,8 @@ if(step3)
     end
     
     % Process last and first image
+    fprintf("Starting on last image \n");
+    
     % normalize data
     x1 = keypoints{num_im,2}(matches{num_im,1}(1,:));
     y1 = keypoints{num_im,3}(matches{num_im,1}(1,:));
@@ -240,10 +246,13 @@ if(step3_matlab)
     fprintf('Apply 8-point RANSAC \n');
     
     load keypoints
+    load matches
     num_im = size(keypoints,1);
     
     % Loop over all images except the last one
-    for i = 1:(length(keypoints)-1)
+    for i = 1:(num_im - 1)
+        fprintf(stract("Starting on image: ", sprintf("%d", i)));
+        
         % normalize data
         x1 = keypoints{i,2}(matches{i,1}(1,:));
         y1 = keypoints{i,3}(matches{i,1}(1,:));
@@ -257,6 +266,8 @@ if(step3_matlab)
     end
     
     % Process last and first image
+    fprintf("Starting on last image \n");
+    
     % normalize data
     x1 = keypoints{num_im,2}(matches{num_im,1}(1,:));
     y1 = keypoints{num_im,3}(matches{num_im,1}(1,:));
@@ -368,8 +379,12 @@ if(step8)
     load colors
     
     % Plot 3D scatter plot of the complete model
-    figure('name', 'Final model');
-    scatter3(complete_model(1,:), complete_model(2,:), complete_model(3,:),'.b')
+    figure('name', 'Final model point cloud');
+    scatter3(complete_model(1,:), complete_model(2,:), complete_model(3,:), 11, colors, '.')
+    
+    % Surface plot
+%     figure('name', 'Final model surface');
+    
 end
 
 

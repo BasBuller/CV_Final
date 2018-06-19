@@ -28,24 +28,26 @@ P               = 8;
 %% Loop to find optimal Fundamental Matrix
 for run = 1:N
     seed = randperm(max(size(x1)), P);      % select P random feature point matches
-       
+    
+    % Build A matrix
     A  = zeros(P,9);
-    for i = seed
-        A(i,:) = [x2(i)*x1(i) x2(i)*y1(i) x2(i) y2(i)*x1(i) y2(i)*y1(i) y2(i) x1(i) y1(i) 1]; 
+    for i = 1:P
+        A(i,:) = [x2(seed(i))*x1(seed(i)) x2(seed(i))*y1(seed(i)) x2(seed(i)) y2(seed(i))*x1(seed(i)) y2(seed(i))*y1(seed(i)) y2(seed(i)) x1(seed(i)) y1(seed(i)) 1]; 
     end
     Fi = fundamental_matrix(A);              % Initial fundamental matrix
         
     p1 = [x1;y1;ones(1,length(x1))];
     p2 = [x2;y2;ones(1,length(x2))];
     Fp1 = Fi*p1;
-    FTp1 = Fi'*p1;
-        
-    num = diag(p2'*Fi*p1).^2;                                                     % Sampson distance numerator
-    den = (Fp1(1,:)).^2 + (Fp1(2,:)).^2 + (FTp1(1,:)).^2 + (FTp1(2,:)).^2;          % Sampson distance denominator
-    inl     = find(num'./den < threshold);
+    FTp2 = Fi'*p2;                          % Rename this one
+    
+    % Sampson distance as inlier threshold
+    num = sum((p2'*Fi)' .* p1, 1) .^ 2;                                             % Sampson distance numerator
+    den = (Fp1(1,:)).^2 + (Fp1(2,:)).^2 + (FTp2(1,:)).^2 + (FTp2(2,:)).^2;          % Sampson distance denominator
+    inl     = find(num./den < threshold);
         
     if length(inl) > total_inliers
-        total_inliers    = length(inl);
+        total_inliers   = length(inl);
         inliers         = inl;
     end    
 end
