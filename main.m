@@ -16,11 +16,12 @@ close all; clear all; clc;
 %% Tunable parameters
 harris_scales       = 22; % determines how many scales the image is checked for
 harris_threshold    = 0.00005;
-nearest_neighbour   = 0.87;
+nearest_neighbour   = 0.80;
 sift_thresh         = 0.75;
-ransac_iters        = 10000;
-ransac_thresh       = 0.005;
-dot_size            = 12;
+ransac_iters        = 25000;
+ransac_thresh_own   = 0.01;
+ransac_thresh_mat   = 20;
+dot_size            = 11;
  
 % switches per step
 step1               = 0; % Perform feature detection
@@ -31,14 +32,16 @@ step2_vlmatch       = 0; % Perform feature matching using vl_ubcmatch
 step3               = 0; % Apply normalized 8-point RANSAC to find best matches
 step3_matlab        = 0; % Apply normalized 8-point RANSAC to find best matches using MATLAB algorithm
 step4               = 0; % Determine point view matrix
-step5               = 1; % 3D coordinates for 3 and 4 consecutive images
-step6               = 1; % Procrustes analysis
-step7               = 0; % Bundle adjustment
-step8               = 1; % Surface plot of complete model
+step5               = 0; % 3D coordinates for 3 and 4 consecutive images
+step6               = 0; % Procrustes analysis
+step7               = 1; % Bundle adjustment
+step8               = 0; % Surface plot of complete model
 
 % example plots
 plots               = 0; % Show example plot of the keypoints found
-image_plot          = 14; % Which images are plotted, this number indicates the left image
+image_plot          = 1; % Which images are plotted, this number indicates the left image
+keypts              = 0;
+eplns               = 1;
 
 
 if(step1)
@@ -96,7 +99,6 @@ if(step1_robot)
         [x1 y1 a1 b1 c1 desc1 x2 y2 a2 b2 c2 desc2] = extract_features2(keypoints{i,1},0);
             
         %create sift Descriptor
-        [x,y,d] = sift_descriptor(keypoints{i,1},s,r,c);
         x = [x1' x2'];
         y = [y1' y2'];
         keypoints(i,2) = {x};
@@ -201,9 +203,11 @@ if(step3)
     load keypoints
     load matches
     num_im = size(keypoints,1);
+    FM = cell(num_im, 1);
     
     % Loop over all images except the last one
     for i = 1:(length(keypoints)-1)
+%     for i = 1:1
         fprintf(strcat("Starting on image: ", sprintf("%d", i), "\n"));
         
         % normalize data
@@ -215,9 +219,10 @@ if(step3)
         [xn2,yn2,T2] = normalize_points(x2,y2);
         
         % apply 8 point ransac algorithm
-        [F, inliers] = fundamental_ransac(xn1,yn1,xn2,yn2,ransac_iters,ransac_thresh);
+        [F, inliers] = fundamental_ransac(xn1,yn1,xn2,yn2,ransac_iters,ransac_thresh_own);
         FRD = T2' * F * T1; 
         matches(i, 2) = {inliers};
+        FM(i, 1) = {FRD};
         fprintf(strcat(num2str(length(find(inliers)))+" inliers found. \n"))
     end
     
@@ -233,13 +238,15 @@ if(step3)
     [xn2,yn2,T2] = normalize_points(x2,y2);
    
     % apply 8 point ransac algorithm
-    [F, inliers] = fundamental_ransac(xn1,yn1,xn2,yn2,ransac_iters,ransac_thresh);
+    [F, inliers] = fundamental_ransac(xn1,yn1,xn2,yn2,ransac_iters,ransac_thresh_own);
     FRD = T2' * F * T1; 
     matches(num_im, 2) = {inliers};
+    FM(num_im, 1) = {FRD};
     fprintf(strcat(num2str(length(find(inliers)))+" inliers found. \n"))
     
     % save data
     save matches matches
+    save FM FM
 end
 
 
@@ -250,10 +257,12 @@ if(step3_matlab)
     load keypoints
     load matches
     num_im = size(keypoints,1);
+    FM = cell(num_im, 1);
     
     % Loop over all images except the last one
     for i = 1:(num_im - 1)
-        fprintf(stract("Starting on image: ", sprintf("%d", i)));
+%     for i = 1:1
+        fprintf(strcat("Starting on image: ", sprintf("%d", i), "\n"));
         
         % normalize data
         x1 = keypoints{i,2}(matches{i,1}(1,:));
@@ -262,8 +271,9 @@ if(step3_matlab)
         y2 = keypoints{i+1,3}(matches{i,1}(2,:));
         
         % apply 8 point ransac algorithm
-        [FRD, inliers] = estimateFundamentalMatrix([x1',y1'],[x2',y2'],'method','RANSAC','NumTrials',ransac_iters,'DistanceThreshold',ransac_thresh);
-        matches{i,2} = inliers';
+        [FRD, inliers] = estimateFundamentalMatrix([x1',y1'],[x2',y2'],'method','RANSAC','NumTrials',ransac_iters,'DistanceThreshold',ransac_thresh_mat);
+        matches(i, 2) = {inliers'};
+        FM(i, 1) = {FRD};
         fprintf(strcat(num2str(length(find(inliers)))+" inliers found. \n"))
     end
     
@@ -277,31 +287,14 @@ if(step3_matlab)
     y2 = keypoints{1,3}(matches{num_im,1}(2,:));
    
     % apply 8 point ransac algorithm 
-    [FRD, inliers] = estimateFundamentalMatrix([x1',y1'],[x2',y2'],'method','RANSAC','NumTrials',ransac_iters,'DistanceThreshold',ransac_thresh);
-    matches{19, 2} = inliers';
+    [FRD, inliers] = estimateFundamentalMatrix([x1',y1'],[x2',y2'],'method','RANSAC','NumTrials',ransac_iters,'DistanceThreshold',ransac_thresh_mat);
+    matches(num_im, 2) = {inliers'};
+    FM(num_im, 1) = {FRD};
     fprintf(strcat(num2str(length(find(inliers)))+" inliers found. \n"))
     
     % save data
     save matches matches
-end
-
-
-if(plots)
-%% plot image for keypoint check
-    fprintf('Plot keypoints on image \n');
-    
-    load keypoints
-    load matches
-    
-    figure('name', stract('image_', sprintf('%d', image_plot)));
-
-    imshow(imread(keypoints{image_plot ,1}));
-    hold on
-    x1 = keypoints{image_plot, 2};
-    y1 = keypoints{image_plot, 3};
-    color = keypoints{image_plot, 6};
-
-    scatter(x1, y1, 10, color, '.')
+    save FM FM
 end
 
 
@@ -330,12 +323,12 @@ if(step5)
     skips = 0;
     % 3 consecutive images
     triple_im = [1:19; 2:19 1; 3:19 1 2];
-    [triple_models,skips] = SfM(keypoints, pvm, triple_im, skips);
+    [triple_models, skips] = SfM(keypoints, pvm, triple_im, skips);
     skips
     
     % 4 consecutive images
     quad_im = [1:19; 2:19 1; 3:19 1 2; 4:19 1:3];
-    [quad_models,skips] = SfM(keypoints, pvm, quad_im, skips);
+    [quad_models, skips] = SfM(keypoints, pvm, quad_im, skips);
     skips
     
     save triple_models triple_models
@@ -351,10 +344,12 @@ if(step6)
     load quad_models
 
     % Complete 3D model
-    [complete_model, colors] = model_stitching(triple_models, quad_models);
+    [complete_model, colors, quad_order, triple_order] = model_stitching(triple_models, quad_models);
 
     save complete_model complete_model
     save colors colors
+    save triple_order triple_order
+    save quad_order quad_order
 end
 
 
@@ -362,14 +357,12 @@ if(step7)
 %% Bundle Adjustment 
     fprintf('Perform bundle adjustment \n');
 
-    load own_complete_model
-    load own_pvm
-    load own_keypoints
-    load own_triple_models
+    load complete_model
     
-    ba_model = bundle_adjustment_complete(PVM, keypoints, triple_models);
+    options = optimoptions(@lsqnonlin, 'Algorithm', 'levenberg-marquardt', 'MaxIterations', 50);
+    ba_model = lsqnonlin(@bundle_adjustment, complete_model, [], [], options);
     
-    save complete_model ba_model
+    save ba_model ba_model
 end
 
 
@@ -381,13 +374,52 @@ if(step8)
     load colors
     
     % Plot 3D scatter plot of the complete model
-    figure('name', 'Final model point cloud');
-    scatter3(complete_model(1,:), complete_model(2,:), complete_model(3,:), dot_size, colors, '.')
-    
-    % Surface plot
-%     figure('name', 'Final model surface');
+    x = complete_model(1,:);
+    y = complete_model(2,:);
+    z = complete_model(3,:);
+    colors = uint8(colors.*255);
+    castle = pointCloud([x' y' z']);
+    castle.Color = colors;
+
+    denoised = pcdenoise(castle);
+    figure('Name','Original')
+    pcshow(castle, 'MarkerSize', dot_size)
+    figure('Name','Denoised')
+    pcshow(denoised, 'MarkerSize', dot_size)
 end
 
+
+if(plots)
+%% plot image for keypoint check
+    fprintf('Plot keypoints on image \n');
+    
+    load keypoints
+    load matches
+    load FM
+    
+    figure('name', strcat('image_', sprintf('%d', image_plot)));
+
+    imgs = [1:19 1];
+    Im1 = imread(keypoints{imgs(image_plot), 1});
+    Im2 = imread(keypoints{imgs(image_plot+1), 1});
+    imshow(Im2);
+    hold on
+    
+    % Plot keypoints
+    if(keypts)
+        x1 = keypoints{image_plot, 2};
+        y1 = keypoints{image_plot, 3};
+        color = keypoints{image_plot, 6};
+        scatter(x1, y1, 10, color, '.')
+    end
+    
+    % Plot epipolar lines
+    if(eplns)
+        epilines = epipolarLine(FM{image_plot, 1}, [keypoints{image_plot, 2}(1, matches{image_plot, 2})' keypoints{image_plot, 3}(1, matches{image_plot, 2})']);
+        points = lineToBorderPoints(epilines, size(Im2));
+        line(points(:,[1,3])',points(:,[2,4])');
+    end
+end
 
 
 

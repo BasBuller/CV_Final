@@ -14,7 +14,7 @@
 %   - Bas Buller 4166566
 %   - Rick Feith 4218272
 
-function [complete_model, color,quad_order,triple_order] = model_stitching(triple_models, quad_models)
+function [complete_model, color, quad_order, triple_order] = model_stitching(triple_models, quad_models)
     % Find biggest four view model, set as starting point
     quad_order = [];
     triple_order = [];

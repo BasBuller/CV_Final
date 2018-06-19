@@ -1,4 +1,4 @@
-% SfM.m
+%% SfM.m
 %
 % Generates the point view matrix based on feature point matches between
 % several images.
@@ -15,10 +15,10 @@
 %   - Bas Buller 4166566
 %   - Rick Feith 4218272
 
-function [models,skips] = SfM(keypoints, pvm, frames, skips)
+function [models, skips] = SfM(keypoints, pvm, frames, skips)
 % Loop over all columns of the images matrix, such to cover all
 % combinations of 3 or 4 consecutive images
-models = cell(size(frames, 2), 3);
+models = cell(size(frames, 2), 5);
 
 for i = 1:size(frames, 2)
     % Determine the point coordinates to be used during SfM, results in
@@ -30,7 +30,8 @@ for i = 1:size(frames, 2)
     
     % Remove columns with zeros
     match(:, unique(col)) = [];
-    pts = zeros(size(match, 1) * 2, size(match,2));
+    pts = zeros(size(match, 1) * 2, size(match, 2));
+    pts_n = zeros(size(match, 1) * 2, size(match, 2));
     
     % Fill pts with coordinates of keypoints
     for j = 1:size(match, 1)
@@ -41,22 +42,22 @@ for i = 1:size(frames, 2)
     
     % Remove mean
     for k = 1:size(pts,1)
-        pts(k,:) = pts(k,:) - mean(pts(k,:));
+        pts_n(k,:) = pts(k,:) - mean(pts(k,:));
     end 
     
     % make sure atleast 3 points are visible in all images
     if(size(pts, 2) > 2)
         
         %normalize points
-        for k = 1:2:(size(pts,1)-1)
-            x1 = pts(k,:) - mean(pts(k,:));
-            y1 = pts(k+1,:) - mean(pts(k+1,:));
-            pts(k,:) = x1;
-            pts(k+1,:) = y1;
+        for k = 1:2:(size(pts_n,1)-1)
+            x1 = pts_n(k,:) - mean(pts_n(k,:));
+            y1 = pts_n(k+1,:) - mean(pts_n(k+1,:));
+            pts_n(k,:) = x1;
+            pts_n(k+1,:) = y1;
         end 
         
         % Determine SVD composition and reduce to rank 3
-        [U, W, V]   = svd(pts);
+        [U, W, V]   = svd(pts_n);
         U3          = U(:, 1:3);
         W3          = W(1:3, 1:3); % Bugs out because there are no matchs covering 3 images
         V           = V';
@@ -86,11 +87,13 @@ for i = 1:size(frames, 2)
         M           = M*C;
         S           = pinv(C)*S;
         end
+        
         %Append to models cell array
         models(i,1) = {S};
         models(i,2) = {match};
         models(i,3) = {keypoints{frames(1,i),6}(match(1, :),:)};
+        models(i,4) = {pts};
+        models(i,5) = {M};
     end
 end
-
 end
