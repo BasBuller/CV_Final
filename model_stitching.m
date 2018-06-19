@@ -14,7 +14,7 @@
 %   - Bas Buller 4166566
 %   - Rick Feith 4218272
 
-function [complete_model, color] = model_stitching(triple_models, quad_models)
+function [complete_model, color,quad_order,triple_order] = model_stitching(triple_models, quad_models)
     % Find biggest four view model, set as starting point
     quad_order = [];
     triple_order = [];
@@ -101,7 +101,8 @@ function [complete_model, color] = model_stitching(triple_models, quad_models)
     % Find matching points between three and four view models
     match_triple = triple_models{triple_order(1), 2};   
     match_quad = quad_models{quad_order(1), 2}(1:3, :);
-
+%     size(match_triple)
+%     size(match_quad)
     % save color values
     color_triple = triple_models{triple_order(1),3};
     color_quad = quad_models{quad_order(1),3};
@@ -163,7 +164,7 @@ function [complete_model, color] = model_stitching(triple_models, quad_models)
         
         save temp
         
-        if size(quad_models{quad_order(i)})
+        if size(quad_models{quad_order(i)},2)>8
         % Reassign temporary working variables
             if quad_order(i)==triple_order(i)
                 direction = 1;
@@ -185,7 +186,7 @@ function [complete_model, color] = model_stitching(triple_models, quad_models)
                 % Apply transform to entire quad view model and save in cell array
                 updated_quad_models(quad_order(i)) = {new_quad'};
 
-            elseif (quad_order(i)+1)==track_bottom;
+            elseif ((quad_order(i)+1)==track_bottom) || (quad_order(i)==19 && triple_order(i)==1);
                 direction = 0;
                 three_index  = find(triple_order==track_bottom);
                 track_bottom = quad_order(i);
@@ -228,18 +229,17 @@ function [complete_model, color] = model_stitching(triple_models, quad_models)
                 % Apply transform to entire quad view model and save in cell array
                 updated_quad_models(quad_order(i)) = {new_quad'}; 
             else
-                fprinf("Unknown scenaria for procrustes joining. \n")
+                save temp
+                fprintf("Unknown scenaria for procrustes joining. \n")
+                break
             end
         else
-            fprintf("Quad model is empty \n")
+            fprintf(strcat("Quad model is empty or to sparse. ",num2str(i) ," models have been joined before termination. \n"))
             break
         end
         
-        
-        
 end
 end
-
 
 
 
