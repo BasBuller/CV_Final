@@ -28,9 +28,9 @@ step1_vlsift        = 0; % Perform feature detection using vl_sift
 step2               = 0; % Perform feature matching
 step2_vlmatch       = 0; % Perform feature matching using vl_ubcmatch
 step3               = 0; % Apply normalized 8-point RANSAC to find best matches
-step3_matlab        = 1; % Apply normalized 8-point RANSAC to find best matches using MATLAB algorithm
-step4               = 1; % Determine point view matrix
-step5               = 1; % 3D coordinates for 3 and 4 consecutive images
+step3_matlab        = 0; % Apply normalized 8-point RANSAC to find best matches using MATLAB algorithm
+step4               = 0; % Determine point view matrix
+step5               = 0; % 3D coordinates for 3 and 4 consecutive images
 step6               = 1; % Procrustes analysis
 step7               = 0; % Bundle adjustment
 step8               = 1; % Surface plot of complete model
@@ -317,12 +317,12 @@ if(step5)
     skips = 0;
     % 3 consecutive images
     triple_im = [1:19; 2:19 1; 3:19 1 2];
-    [triple_models,skips] = SfM(keypoints, PVM, triple_im,skips);
+    [triple_models,skips] = SfM(keypoints, pvm, triple_im,skips);
     skips
     
     % 4 consecutive images
     quad_im = [1:19; 2:19 1; 3:19 1 2; 4:19 1:3];
-    [quad_models,skips] = SfM(keypoints, PVM, quad_im,skips);
+    [quad_models,skips] = SfM(keypoints, pvm, quad_im,skips);
     skips
     
     save triple_models triple_models
@@ -334,8 +334,8 @@ if(step6)
 %% Procrustes analysis for complete 3D model
     fprintf('Preform procrustes analysis to build complete 3D model \n');
 
-    load own_triple_models
-    load own_quad_models
+    load triple_models
+    load quad_models
 
     % Complete 3D model
     [complete_model, colors] = model_stitching(triple_models, quad_models);

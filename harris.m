@@ -21,10 +21,10 @@ img = im;
 gamma = 0.7; % The derivative-scale is gamma times the integration scale
 
 % Calculate Gaussian Derivatives at derivative-scale
-Ix =  ImageDerivatives(img,gamma*sigma,gamma*sigma,"x") *gamma*sigma;
-Iy = ImageDerivatives(img,gamma*sigma,gamma*sigma,"y")*gamma*sigma;
+Ix =  ImageDerivatives(img,gamma*sigma, gamma*sigma, "x") * gamma*sigma;
+Iy = ImageDerivatives(img,gamma*sigma, gamma*sigma, "y") * gamma*sigma;
 
-% Allocate an 3-channel image to hold the 3 parameters for each pixel
+% Allocate a 3-channel image to hold the 3 parameters for each pixel
 M = zeros(size(Ix,1), size(Ix,2), 3);
 
 % Calculate M for each pixel
