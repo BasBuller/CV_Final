@@ -21,7 +21,7 @@ sift_thresh         = 0.75;
 ransac_iters        = 25000;
 ransac_thresh_own   = 0.01;
 ransac_thresh_mat   = 20;
-dot_size            = 11;
+dot_size            = 12;
  
 % switches per step
 step1               = 0; % Perform feature detection
@@ -30,12 +30,12 @@ step1_vlsift        = 0; % Perform feature detection using vl_sift
 step2               = 0; % Perform feature matching
 step2_vlmatch       = 0; % Perform feature matching using vl_ubcmatch
 step3               = 0; % Apply normalized 8-point RANSAC to find best matches
-step3_matlab        = 0; % Apply normalized 8-point RANSAC to find best matches using MATLAB algorithm
-step4               = 0; % Determine point view matrix
-step5               = 0; % 3D coordinates for 3 and 4 consecutive images
-step6               = 0; % Procrustes analysis
-step7               = 1; % Bundle adjustment
-step8               = 0; % Surface plot of complete model
+step3_matlab        = 1; % Apply normalized 8-point RANSAC to find best matches using MATLAB algorithm
+step4               = 1; % Determine point view matrix
+step5               = 1; % 3D coordinates for 3 and 4 consecutive images
+step6               = 1; % Procrustes analysis
+step7               = 0; % Bundle adjustment
+step8               = 1; % Surface plot of complete model
 
 % example plots
 plots               = 0; % Show example plot of the keypoints found
