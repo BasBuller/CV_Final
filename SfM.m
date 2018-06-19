@@ -15,7 +15,7 @@
 %   - Bas Buller 4166566
 %   - Rick Feith 4218272
 
-function [models,skips] = SfM(keypoints, pvm, frames,skips)
+function [models,skips] = SfM(keypoints, pvm, frames, skips)
 % Loop over all columns of the images matrix, such to cover all
 % combinations of 3 or 4 consecutive images
 models = cell(size(frames, 2), 3);
@@ -30,12 +30,12 @@ for i = 1:size(frames, 2)
     
     % Remove columns with zeros
     match(:, unique(col)) = [];
+    pts = zeros(size(match, 1) * 2, size(match,2));
     
-    pts = zeros(size(match,1) * 2, size(match,2));
     % Fill pts with coordinates of keypoints
     for j = 1:size(match, 1)
-        pts((2*j-1),:) = keypoints{frames(j, i),2}(match(j, :)); 
-        pts((2*j),:) = keypoints{frames(j,i),3}(match(j, :));
+        pts((2*j-1),:) = keypoints{frames(j, i), 2}(match(j, :)); 
+        pts((2*j),:) = keypoints{frames(j, i), 3}(match(j, :));
         
     end
     

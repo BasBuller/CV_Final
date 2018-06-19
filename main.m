@@ -19,7 +19,7 @@ harris_threshold    = 0.00005;
 nearest_neighbour   = 0.87;
 sift_thresh         = 0.75;
 ransac_iters        = 10000;
-ransac_thresh       = 100;
+ransac_thresh       = 0.005;
  
 % switches per step
 step1               = 0; % Perform feature detection
@@ -31,9 +31,9 @@ step3               = 0; % Apply normalized 8-point RANSAC to find best matches
 step3_matlab        = 0; % Apply normalized 8-point RANSAC to find best matches using MATLAB algorithm
 step4               = 0; % Determine point view matrix
 step5               = 0; % 3D coordinates for 3 and 4 consecutive images
-step6               = 0; % Procrustes analysis
+step6               = 1; % Procrustes analysis
 step7               = 0; % Bundle adjustment
-step8               = 0; % Surface plot of complete model
+step8               = 1; % Surface plot of complete model
 
 % example plots
 plots               = 0; % Show example plot of the keypoints found
@@ -169,8 +169,7 @@ end
 if(step2_vlmatch)
 %% step 2: Look for matches in feature points using vl_ubcmatch
     fprintf('Perform feature matching using vl_ubcmatch \n');
-    
-    load matches
+   
     load keypoints
     num_im = size(keypoints,1);
     matches   = {};
@@ -217,11 +216,12 @@ if(step3)
         % apply 8 point ransac algorithm
         [F, inliers] = fundamental_ransac(xn1,yn1,xn2,yn2,ransac_iters,ransac_thresh);
         FRD = T2' * F * T1; 
+        matches(i, 2) = {inliers};
         fprintf(strcat(num2str(length(find(inliers)))+" inliers found. \n"))
     end
     
     % Process last and first image
-    fprintf("Starting on last image \n");
+    fprintf(strcat("Starting on image: ", sprintf("%d", num_im), "\n"));
     
     % normalize data
     x1 = keypoints{num_im,2}(matches{num_im,1}(1,:));
@@ -234,6 +234,7 @@ if(step3)
     % apply 8 point ransac algorithm
     [F, inliers] = fundamental_ransac(xn1,yn1,xn2,yn2,ransac_iters,ransac_thresh);
     FRD = T2' * F * T1; 
+    matches(num_im, 2) = {inliers};
     fprintf(strcat(num2str(length(find(inliers)))+" inliers found. \n"))
     
     % save data
@@ -328,12 +329,12 @@ if(step5)
     skips = 0;
     % 3 consecutive images
     triple_im = [1:19; 2:19 1; 3:19 1 2];
-    [triple_models,skips] = SfM(keypoints, pvm, triple_im,skips);
+    [triple_models,skips] = SfM(keypoints, pvm, triple_im, skips);
     skips
     
     % 4 consecutive images
     quad_im = [1:19; 2:19 1; 3:19 1 2; 4:19 1:3];
-    [quad_models,skips] = SfM(keypoints, pvm, quad_im,skips);
+    [quad_models,skips] = SfM(keypoints, pvm, quad_im, skips);
     skips
     
     save triple_models triple_models
@@ -384,7 +385,6 @@ if(step8)
     
     % Surface plot
 %     figure('name', 'Final model surface');
-    
 end
 
 
