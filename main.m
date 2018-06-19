@@ -20,6 +20,7 @@ nearest_neighbour   = 0.87;
 sift_thresh         = 0.75;
 ransac_iters        = 10000;
 ransac_thresh       = 0.005;
+dot_size            = 12;
  
 % switches per step
 step1               = 0; % Perform feature detection
@@ -30,7 +31,7 @@ step2_vlmatch       = 0; % Perform feature matching using vl_ubcmatch
 step3               = 0; % Apply normalized 8-point RANSAC to find best matches
 step3_matlab        = 0; % Apply normalized 8-point RANSAC to find best matches using MATLAB algorithm
 step4               = 0; % Determine point view matrix
-step5               = 0; % 3D coordinates for 3 and 4 consecutive images
+step5               = 1; % 3D coordinates for 3 and 4 consecutive images
 step6               = 1; % Procrustes analysis
 step7               = 0; % Bundle adjustment
 step8               = 1; % Surface plot of complete model
@@ -381,7 +382,7 @@ if(step8)
     
     % Plot 3D scatter plot of the complete model
     figure('name', 'Final model point cloud');
-    scatter3(complete_model(1,:), complete_model(2,:), complete_model(3,:), 11, colors, '.')
+    scatter3(complete_model(1,:), complete_model(2,:), complete_model(3,:), dot_size, colors, '.')
     
     % Surface plot
 %     figure('name', 'Final model surface');
