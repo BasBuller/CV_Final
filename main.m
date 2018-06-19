@@ -19,15 +19,15 @@ harris_threshold    = 0.00001;
 nearest_neighbour   = 0.80;
 sift_thresh         = 0.75;
 ransac_iters        = 10000;
-ransac_thresh       = 20;
+ransac_thresh       = 5;
 
 own_algorithm       = 0; % Use sift feature detection and matching (0) or own algorithm (1)      
 step1               = 0; % Perform feature detection
 step2               = 0; % Perform feature matching
-step3               = 0; % Apply normalized 8-point Ransac to find best matches
-step4               = 0; % Determine point view matrix
-step5               = 0; % 3D coordinates for 3 and 4 consecutive images
-step6               = 0; % Procrustes analysis
+step3               = 1; % Apply normalized 8-point Ransac to find best matches
+step4               = 1; % Determine point view matrix
+step5               = 1; % 3D coordinates for 3 and 4 consecutive images
+step6               = 1; % Procrustes analysis
 step7               = 0; % Bundle adjustment
 step8               = 1; % Surface plot of complete model
 plots               = 0; % Show example plots
@@ -367,10 +367,10 @@ castle = pointCloud([x' y' z']);
 castle.Color = colors;
 
 denoised = pcdenoise(castle);
-% figure('Name','Original')
-% pcshow(castle)
-% figure('Name','Denoised')
-% pcshow(denoised)
+figure('Name','Original')
+pcshow(castle)
+figure('Name','Denoised')
+pcshow(denoised)
 
 xyz = denoised.Location;
 x = xyz(:,1)';
@@ -387,8 +387,8 @@ for i = 1: length(x)
 end
 
 
-tri = delaunay(x,y);
-trisurf(tri,x,y,z)
+% tri = delaunay(x,y);
+% trisurf(tri,x,y,z)
 % figure()
 % surf(X,Y,model)
 end
