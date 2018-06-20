@@ -26,7 +26,7 @@ step1               = 0; % Perform feature detection
 step2               = 0; % Perform feature matching
 step3               = 0; % Apply normalized 8-point Ransac to find best matches
 step4               = 0; % Determine point view matrix
-step5               = 0; % 3D coordinates for 3 and 4 consecutive images
+step5               = 1; % 3D coordinates for 3 and 4 consecutive images
 step6               = 1; % Procrustes analysis
 step7               = 0; % Bundle adjustment
 step8               = 1; % Surface plot of complete model
@@ -368,7 +368,7 @@ castle.Color = colors;
 figure()
 pcshow(castle)
 
-[denoised1,inliers] = pcdenoise(castle,'NumNeighbors',4,'Threshold',0.05);
+[denoised1,inliers] = pcdenoise(castle,'NumNeighbors',200,'Threshold',0.5);
 
 
 
@@ -419,7 +419,7 @@ y = xyz(:,2);
 z = xyz(:,3);
 
 
-[xi,yi] = meshgrid(min(x):1:max(x),min(y):1:max(y));
+[xi,yi] = meshgrid(min(x):0.5:max(x),min(y):0.5:max(y));
 
 Zint = scatteredInterpolant(x,y,z,'natural','none');
 
@@ -430,20 +430,20 @@ Gint = scatteredInterpolant(x,y,z,colors_denoised(:,2),'nearest','none');
 Bint = scatteredInterpolant(x,y,z,colors_denoised(:,3),'nearest','none');
 
 % 
-%  zi = Zint(xi,yi);
-%  fprintf("Z is done \n")
-%  R = Rint(xi,yi,zi);
-%  fprintf("R is done \n")
-%  B = Bint(xi,yi,zi);
-%  fprintf("G is done \n")
-%  G = Gint(xi,yi,zi);
-%  fprintf("B is done \n")
-% %  
-%  castle3 = pointCloud([xi(:) yi(:) zi(:)]);
-%  castle3.Color = uint8([R(:) G(:) B(:)]);
-%  figure()
-%  pcshow(castle3)
+ zi = Zint(xi,yi);
+ fprintf("Z is done \n")
+ R = Rint(xi,yi,zi);
+ fprintf("R is done \n")
+ B = Bint(xi,yi,zi);
+ fprintf("G is done \n")
+ G = Gint(xi,yi,zi);
+ fprintf("B is done \n")
  
+ castle3 = pointCloud([xi(:) yi(:) zi(:)]);
+ castle3.Color = uint8([R(:) G(:) B(:)]);
+ figure()
+ pcshow(castle3)
+% %  
  
 x = x - min(x);
 y = y - min(y);
