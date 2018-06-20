@@ -27,7 +27,7 @@ step2               = 0; % Perform feature matching
 step3               = 0; % Apply normalized 8-point Ransac to find best matches
 step4               = 0; % Determine point view matrix
 step5               = 0; % 3D coordinates for 3 and 4 consecutive images
-step6               = 0; % Procrustes analysis
+step6               = 1; % Procrustes analysis
 step7               = 0; % Bundle adjustment
 step8               = 1; % Surface plot of complete model
 plots               = 0; % Show example plots
@@ -313,7 +313,7 @@ if(step6)
     end
     
     % Complete 3D model
-    [complete_model, colors] = model_stitching(triple_models, quad_models);
+    [complete_model, colors,quad_order,triple_order] = model_stitching(triple_models, quad_models);
     
     if(own_algorithm)
         save own_complete_model complete_model
@@ -359,47 +359,100 @@ if(step8)
 % scatter3(complete_model(1,:), complete_model(2,:), complete_model(3,:),[],colors,'.')
 
 % [X,Y] = meshgrid(round(complete_model(1,:)), round(complete_model(2,:)));
-x = -complete_model(1,:);
+x = complete_model(1,:);
 y = complete_model(2,:);
 z = complete_model(3,:);
 colors = uint8(colors.*255);
 castle = pointCloud([x' y' z']);
 castle.Color = colors;
+figure()
+pcshow(castle)
 
-[denoised,inliers] = pcdenoise(castle);
-% figure('Name','Original')
-% pcshow(castle)
-% figure('Name','Denoised')
-% pcshow(denoised)
-% xlabel('x')
-% ylabel('y')
-% zlabel('z')
+[denoised1,inliers] = pcdenoise(castle,'NumNeighbors',4,'Threshold',0.05);
+
+
+
+
+
+%%
+% figure('Name','1')
+% pcshow(denoised1)
+
 colors_denoised = double(colors(inliers,:));
-xyz = denoised.Location;
+xyz = denoised1.Location;
+x1 = xyz(:,1)';
+y1 = xyz(:,2)';
+z1 = xyz(:,3)';
+load updated_quad
+x = updated_quad_models{quad_order(1),1}(1,:);
+y = updated_quad_models{quad_order(1),1}(2,:);
+z = updated_quad_models{quad_order(1),1}(3,:);
+max(z)-min(z)
+save('xyz','x','y','z')
+rotateX = 1;
+rotateY = 1;
+rotateZ =0;
+options = optimoptions('lsqnonlin','Display','iter');
+rotations = lsqnonlin(@Zdist,[rotateX, rotateY rotateZ],[],[],options);
+
+rotateX = rotations(1);
+rotateY = rotations(2);
+rotateZ = rotations(3);
+Rx = [1 0 0; 0 cos(rotateX) -sin(rotateX); 0 sin(rotateX) cos(rotateX)];
+Ry = [cos(rotateY) 0 sin(rotateY); 0 1 0; -sin(rotateY) 0 cos(rotateY)];
+Rz = [cos(rotateZ) -sin(rotateZ) 0; sin(rotateZ) cos(rotateZ) 0; 0 0 1];
+newPoints =Rz* Ry * Rx * [x1; y1; z1];
+
+% quad = pointCloud([x',y',z']);
+
+castle2 = pointCloud(newPoints');
+castle2.Color = colors(inliers,:);
+figure()
+pcshow(denoised1)
+figure('Name','Castle2')
+pcshow(castle2)
+
+
+xyz = castle2.Location;
 x = xyz(:,1);
 y = xyz(:,2);
 z = xyz(:,3);
 
 
-[xi,yi] = meshgrid(min(x):0.1:max(x),min(y):0.1:max(y));
-% zi = griddata(x,y,z,xi,yi);
-Zint = scatteredInterpolant(x,y,z);
-Rint = scatteredInterpolant(x,y,z,colors_denoised(:,1));
-Gint = scatteredInterpolant(x,y,z,colors_denoised(:,2));
-Bint = scatteredInterpolant(x,y,z,colors_denoised(:,3));
+[xi,yi] = meshgrid(min(x):1:max(x),min(y):1:max(y));
 
-% zi = Zint(xi,yi);
-% R = Rint(xi,yi,zi);
-% B = Bint(xi,yi,zi);
-% G = Gint(xi,yi,zi);
-% x = x - min(x);
-% y = y - min(y);
-% z = z -min(z);
-% model = zeros(ceil(max(y)),ceil(max(x)));
-% for i = 1: length(x)
-%     model(round(y(i))+1,round(x(i))+1) = z(i);
-%     
-% end
+Zint = scatteredInterpolant(x,y,z,'natural','none');
+
+Rint = scatteredInterpolant(x,y,z,colors_denoised(:,1),'nearest','none');
+
+Gint = scatteredInterpolant(x,y,z,colors_denoised(:,2),'nearest','none');
+
+Bint = scatteredInterpolant(x,y,z,colors_denoised(:,3),'nearest','none');
+
+% 
+%  zi = Zint(xi,yi);
+%  fprintf("Z is done \n")
+%  R = Rint(xi,yi,zi);
+%  fprintf("R is done \n")
+%  B = Bint(xi,yi,zi);
+%  fprintf("G is done \n")
+%  G = Gint(xi,yi,zi);
+%  fprintf("B is done \n")
+% %  
+%  castle3 = pointCloud([xi(:) yi(:) zi(:)]);
+%  castle3.Color = uint8([R(:) G(:) B(:)]);
+%  figure()
+%  pcshow(castle3)
+ 
+ 
+x = x - min(x);
+y = y - min(y);
+z = z -min(z);
+model = zeros(ceil(max(y)),ceil(max(x)));
+for i = 1: length(x)
+    model(round(y(i))+1,round(x(i))+1) = z(i);
+    
+end
 
 
 % tri = delaunay(x,y);

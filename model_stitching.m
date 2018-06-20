@@ -239,7 +239,7 @@ function [complete_model, color,quad_order,triple_order] = model_stitching(tripl
         end
         
         
-        
+       save updated_quad updated_quad_models 
 end
 end
 
