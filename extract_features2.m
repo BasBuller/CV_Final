@@ -9,7 +9,6 @@ end
 
 imtxt = strcat(strcat(name),'.haraff.sift');
 [x1 y1 a1 b1 c1 desc1] = loadFeatures(imtxt);
-
 imtxt = strcat(strcat(name),'.hesaff.sift');
 [x2 y2 a2 b2 c2 desc2] = loadFeatures(imtxt);
 

@@ -410,7 +410,7 @@ castle2.Color = colors(inliers,:);
 figure()
 pcshow(denoised1)
 figure('Name','Castle2')
-pcshow(castle2)
+pcshow(castle2,'MarkerSize',15)
 
 
 xyz = castle2.Location;
@@ -418,31 +418,31 @@ x = xyz(:,1);
 y = xyz(:,2);
 z = xyz(:,3);
 
-
-[xi,yi] = meshgrid(min(x):0.5:max(x),min(y):0.5:max(y));
-
-Zint = scatteredInterpolant(x,y,z,'natural','none');
-
-Rint = scatteredInterpolant(x,y,z,colors_denoised(:,1),'nearest','none');
-
-Gint = scatteredInterpolant(x,y,z,colors_denoised(:,2),'nearest','none');
-
-Bint = scatteredInterpolant(x,y,z,colors_denoised(:,3),'nearest','none');
-
 % 
- zi = Zint(xi,yi);
- fprintf("Z is done \n")
- R = Rint(xi,yi,zi);
- fprintf("R is done \n")
- B = Bint(xi,yi,zi);
- fprintf("G is done \n")
- G = Gint(xi,yi,zi);
- fprintf("B is done \n")
- 
- castle3 = pointCloud([xi(:) yi(:) zi(:)]);
- castle3.Color = uint8([R(:) G(:) B(:)]);
- figure()
- pcshow(castle3)
+% [xi,yi] = meshgrid(min(x):0.5:max(x),min(y):0.5:max(y));
+% 
+% Zint = scatteredInterpolant(x,y,z,'natural','none');
+% 
+% Rint = scatteredInterpolant(x,y,z,colors_denoised(:,1),'nearest','none');
+% 
+% Gint = scatteredInterpolant(x,y,z,colors_denoised(:,2),'nearest','none');
+% 
+% Bint = scatteredInterpolant(x,y,z,colors_denoised(:,3),'nearest','none');
+% 
+% % 
+%  zi = Zint(xi,yi);
+%  fprintf("Z is done \n")
+%  R = Rint(xi,yi,zi);
+%  fprintf("R is done \n")
+%  B = Bint(xi,yi,zi);
+%  fprintf("G is done \n")
+%  G = Gint(xi,yi,zi);
+%  fprintf("B is done \n")
+%  
+%  castle3 = pointCloud([xi(:) yi(:) zi(:)]);
+%  castle3.Color = uint8([R(:) G(:) B(:)]);
+%  figure()
+%  pcshow(castle3)
 % %  
  
 x = x - min(x);
