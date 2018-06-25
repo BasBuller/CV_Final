@@ -22,7 +22,7 @@ function cost = bundle_adjustment(X0)
     load updated_triple_models updated_triple_models
     
     % Pre assign variables
-    cost = [];
+    cost = 0;
     prev_ind = 0;
     
     % Split input
@@ -52,9 +52,6 @@ function cost = bundle_adjustment(X0)
         % Compare projected 2 coordintes with original, measured keypoints
         loc_cost = orig_keyp - Mloc * local_model;
         upd_cost = sqrt([loc_cost(1,:).^2 + loc_cost(2,:).^2; loc_cost(3,:).^2 + loc_cost(4,:).^2; loc_cost(5,:).^2 + loc_cost(6,:).^2]);
-        upd_cost = sum(upd_cost);
-        
-        % Cost now returned as 6xPTS, with difference between all keypoint coordinates as its entries 
-        cost = [cost upd_cost];
+        cost = sum(sum(upd_cost));
     end
 end

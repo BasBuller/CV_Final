@@ -19,7 +19,7 @@ harris_threshold    = 0.00005;
 nearest_neighbour   = 0.80;
 sift_thresh         = 0.75;
 ransac_iters        = 25000;
-ransac_thresh_own   = 0.001;
+ransac_thresh_own   = 0.007;
 ransac_thresh_mat   = 20;
 dot_size            = 11;
 max_iters_lsq       = 1;
@@ -35,10 +35,10 @@ step3_matlab        = 0; % Apply normalized 8-point RANSAC to find best matches 
 step4               = 0; % Determine point view matrix
 step5               = 0; % 3D coordinates for 3 and 4 consecutive images
 step6               = 0; % Procrustes analysis
-step7               = 0; % Bundle adjustment
+step7               = 1; % Bundle adjustment
 step8               = 0; % Resolve afine ambiguity
-step9               = 1; % Surface plot of complete model without ba
-step9b              = 1; % Surface plot of the bundle adjusted model
+step9               = 0; % Surface plot of complete model without ba
+step9b              = 0; % Surface plot of the bundle adjusted model
 
 % example plots
 plots               = 0; % Show example plot of the keypoints found
@@ -374,8 +374,8 @@ if(step7)
     end
     X0 = [M, complete_model];
     
-    options = optimoptions(@lsqnonlin, 'Algorithm', 'levenberg-marquardt', 'MaxIterations', max_iters_lsq, 'Display', 'iter');
-    out = lsqnonlin(@bundle_adjustment, X0, [], [], options);
+    options = optimoptions(@fminunc, 'MaxIterations', max_iters_lsq, 'Display', 'iter');
+    out = fminunc(@bundle_adjustment, X0, options);
     
     M = X0(:, 1:max(size(triple_models))*6)';
     ba_model = X0(:, (max(size(triple_models))*6 + 1):end);
