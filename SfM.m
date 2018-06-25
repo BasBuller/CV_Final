@@ -69,30 +69,30 @@ for i = 1:size(frames, 2)
         save('M', 'M');
     
        % resolve affine ambiguity and solve for L
-        A           = M(1:2, :);
-        L0          = pinv(A'*A);
-        options = optimoptions(@lsqnonlin, 'StepTolerance',1e-16,'OptimalityTolerance',1e-16,'FunctionTolerance',1e-16);
-        L           = lsqnonlin(@residuals, L0,[],[],options);%ones(size(L0))*-1e-2,ones(size(L0))*1e-2,options);
-    
-        if sum(real(eig(L))<0)>0
-            fprintf(strcat("Eigenvalues to small size: ",num2str(size(match,2)),", round: ",num2str(i)," \n"))
-            skips = skips +1;
-            save('temp.mat','U3','W3','V','V3','M','S','A','L0','L','pts')
-            
-        else
-       % Recover C
-        C           = chol(L, 'lower');
-       
-       % Update M and S
-        M           = M*C;
-        S           = pinv(C)*S;
-        end
+%         A           = M(1:2, :);
+%         L0          = pinv(A'*A);
+%         options = optimoptions(@lsqnonlin, 'StepTolerance',1e-16,'OptimalityTolerance',1e-16,'FunctionTolerance',1e-16);
+%         L           = lsqnonlin(@residuals, L0,[],[],options);%ones(size(L0))*-1e-2,ones(size(L0))*1e-2,options);
+%     
+%         if sum(real(eig(L))<0)>0
+%             fprintf(strcat("Eigenvalues to small size: ",num2str(size(match,2)),", round: ",num2str(i)," \n"))
+%             skips = skips +1;
+%             save('temp.mat','U3','W3','V','V3','M','S','A','L0','L','pts')
+%             
+%         else
+%        % Recover C
+%         C           = chol(L, 'lower');
+%        
+%        % Update M and S
+%         M           = M*C;
+%         S           = pinv(C)*S;
+%         end
         
         %Append to models cell array
         models(i,1) = {S};
         models(i,2) = {match};
         models(i,3) = {keypoints{frames(1,i),6}(match(1, :),:)};
-        models(i,4) = {pts};
+        models(i,4) = {pts};            % coordinates of original keypoints
         models(i,5) = {M};
     end
 end

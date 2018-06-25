@@ -19,9 +19,10 @@ harris_threshold    = 0.00005;
 nearest_neighbour   = 0.80;
 sift_thresh         = 0.75;
 ransac_iters        = 25000;
-ransac_thresh_own   = 0.01;
+ransac_thresh_own   = 0.001;
 ransac_thresh_mat   = 20;
 dot_size            = 11;
+max_iters_lsq       = 1;
  
 % switches per step
 step1               = 0; % Perform feature detection
@@ -35,7 +36,9 @@ step4               = 0; % Determine point view matrix
 step5               = 0; % 3D coordinates for 3 and 4 consecutive images
 step6               = 0; % Procrustes analysis
 step7               = 0; % Bundle adjustment
-step8               = 0; % Surface plot of complete model
+step8               = 0; % Resolve afine ambiguity
+step9               = 1; % Surface plot of complete model without ba
+step9b              = 1; % Surface plot of the bundle adjusted model
 
 % example plots
 plots               = 0; % Show example plot of the keypoints found
@@ -360,17 +363,57 @@ if(step7)
     fprintf('Perform bundle adjustment \n');
 
     load complete_model
+    load triple_models
+    load triple_order
     
-    options = optimoptions(@lsqnonlin, 'Algorithm', 'levenberg-marquardt', 'MaxIterations', 50);
-    ba_model = lsqnonlin(@bundle_adjustment, complete_model, [], [], options);
+    % Assign individual motion matrices to the complete M matrix in
+    % increasing order, BA function takes care of specific order
+    M = zeros(3, max(size(triple_models))*6);
+    for i = 1:max(size(triple_models))
+        M(:, (i-1)*6 + 1:i*6) = triple_models{i, 5}';
+    end
+    X0 = [M, complete_model];
     
+    options = optimoptions(@lsqnonlin, 'Algorithm', 'levenberg-marquardt', 'MaxIterations', max_iters_lsq, 'Display', 'iter');
+    out = lsqnonlin(@bundle_adjustment, X0, [], [], options);
+    
+    M = X0(:, 1:max(size(triple_models))*6)';
+    ba_model = X0(:, (max(size(triple_models))*6 + 1):end);
+    
+    save M M
     save ba_model ba_model
 end
 
 
 if(step8)
+%% Resolve afine ambiguity
+    fprintf('Resolving afine ambiguity \n');
+
+    load M
+    load ba_model
+    
+    % Initial estimate
+    A = M(1:2, :);
+    L0 = pinv(A' * A);
+    
+    % Solve for L
+    L = lsqnonlin(@resolve_affine_ambiguity, L0);
+    
+    % Cholesky decomposition
+    C = chol(L, 'lower');
+    
+    % Update motion and structure matrices
+    M = M * C;
+    ba_model = pinv(C) * ba_model;
+    
+    save M M
+    save ba_model ba_model
+end
+    
+
+if(step9)
 %% Surface plot of complete model
-    fprintf('Build surface plot of the complete model \n');
+    fprintf('Build surface plot of the complete model without ba \n');
 
     load complete_model
     load colors
@@ -379,6 +422,29 @@ if(step8)
     x = complete_model(1,:);
     y = complete_model(2,:);
     z = complete_model(3,:);
+    colors = uint8(colors.*255);
+    castle = pointCloud([x' y' z']);
+    castle.Color = colors;
+
+    denoised = pcdenoise(castle);
+    figure('Name','Original')
+    pcshow(castle, 'MarkerSize', dot_size)
+    figure('Name','Denoised')
+    pcshow(denoised, 'MarkerSize', dot_size)
+end
+
+
+if(step9b)
+%% Surface plot of complete bundle adjusted model
+    fprintf('Build surface plot of the bundle adjusted model \n');
+
+    load ba_model
+    load colors
+    
+    % Plot 3D scatter plot of the complete model
+    x = ba_model(1,:);
+    y = ba_model(2,:);
+    z = ba_model(3,:);
     colors = uint8(colors.*255);
     castle = pointCloud([x' y' z']);
     castle.Color = colors;
