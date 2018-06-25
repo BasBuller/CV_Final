@@ -18,7 +18,7 @@ harris_scales       = 22; % determines how many scales the image is checked for
 harris_threshold    = 0.00001;
 nearest_neighbour   = 0.80;
 sift_thresh         = 0.75;
-ransac_iters        = 10000;
+ransac_iters        = 30000;
 ransac_thresh       = 10;
 
 own_algorithm       = 0; % Use sift feature detection and matching (0) or own algorithm (1)      
@@ -26,7 +26,7 @@ step1               = 0; % Perform feature detection
 step2               = 0; % Perform feature matching
 step3               = 0; % Apply normalized 8-point Ransac to find best matches
 step4               = 0; % Determine point view matrix
-step5               = 1; % 3D coordinates for 3 and 4 consecutive images
+step5               = 0; % 3D coordinates for 3 and 4 consecutive images
 step6               = 1; % Procrustes analysis
 step7               = 0; % Bundle adjustment
 step8               = 1; % Surface plot of complete model
@@ -53,9 +53,12 @@ if(step1)
             [x1 y1 a1 b1 c1 desc1 x2 y2 a2 b2 c2 desc2] = extract_features2(keypoints{i,1},1);
             
 % %            create sift Descriptor
+                x = [];
+                y = [];
+                d = [];
              [x,y,d] = sift_descriptor(keypoints{i,1},s,r,c);
 %             keypoints(i,2) = {x};
-%             keypoints(i,3) = {y};
+%             keypoints(i,3) = {y};a
 %             keypoints(i,4) = {s};
 %             keypoints(i,5) = {d};
 %             keypoints(i,6) = {impixel(imread(keypoints{i,1}),x,y)./255};
@@ -368,7 +371,7 @@ castle.Color = colors;
 figure()
 pcshow(castle)
 
-[denoised1,inliers] = pcdenoise(castle,'NumNeighbors',200,'Threshold',0.5);
+[denoised1,inliers] = pcdenoise(castle,'NumNeighbors',50,'Threshold',0.001);
 
 
 
@@ -390,7 +393,7 @@ z = updated_quad_models{quad_order(1),1}(3,:);
 max(z)-min(z)
 save('xyz','x','y','z')
 rotateX = 1;
-rotateY = 1;
+rotateY = -1;
 rotateZ =0;
 options = optimoptions('lsqnonlin','Display','iter');
 rotations = lsqnonlin(@Zdist,[rotateX, rotateY rotateZ],[],[],options);
@@ -401,7 +404,7 @@ rotateZ = rotations(3);
 Rx = [1 0 0; 0 cos(rotateX) -sin(rotateX); 0 sin(rotateX) cos(rotateX)];
 Ry = [cos(rotateY) 0 sin(rotateY); 0 1 0; -sin(rotateY) 0 cos(rotateY)];
 Rz = [cos(rotateZ) -sin(rotateZ) 0; sin(rotateZ) cos(rotateZ) 0; 0 0 1];
-newPoints =Rz* Ry * Rx * [x1; y1; z1];
+newPoints =Rz* Ry * Rx * [-x1; y1; z1];
 
 % quad = pointCloud([x',y',z']);
 
@@ -410,7 +413,7 @@ castle2.Color = colors(inliers,:);
 figure()
 pcshow(denoised1)
 figure('Name','Castle2')
-pcshow(castle2,'MarkerSize',15)
+pcshow(castle2,'MarkerSize',50)
 
 
 xyz = castle2.Location;
@@ -437,13 +440,10 @@ z = xyz(:,3);
 %  B = Bint(xi,yi,zi);
 %  fprintf("G is done \n")
 %  G = Gint(xi,yi,zi);
-%  fprintf("B is done \n")
-%  
-%  castle3 = pointCloud([xi(:) yi(:) zi(:)]);
-%  castle3.Color = uint8([R(:) G(:) B(:)]);
+%  fprintf("B is done \n")tstR(:) G(:) B(:)]);
 %  figure()
 %  pcshow(castle3)
-% %  
+ 
  
 x = x - min(x);
 y = y - min(y);

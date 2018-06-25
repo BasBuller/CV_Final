@@ -164,7 +164,7 @@ function [complete_model, color,quad_order,triple_order] = model_stitching(tripl
         
         save temp
         
-        if size(quad_models{quad_order(i)},2)>8
+        if size(quad_models{quad_order(i)},2)>50
         % Reassign temporary working variables
             if quad_order(i)==triple_order(i)
                 direction = 1;
