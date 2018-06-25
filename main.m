@@ -19,10 +19,10 @@ harris_threshold    = 0.00005;
 nearest_neighbour   = 0.80;
 sift_thresh         = 0.75;
 ransac_iters        = 25000;
-ransac_thresh_own   = 0.007;
+ransac_thresh_own   = 0.0015;
 ransac_thresh_mat   = 20;
-dot_size            = 11;
-max_iters_lsq       = 1;
+dot_size            = 15;
+max_iters_lsq       = 50;
  
 % switches per step
 step1               = 0; % Perform feature detection
@@ -35,10 +35,10 @@ step3_matlab        = 0; % Apply normalized 8-point RANSAC to find best matches 
 step4               = 0; % Determine point view matrix
 step5               = 0; % 3D coordinates for 3 and 4 consecutive images
 step6               = 0; % Procrustes analysis
-step7               = 1; % Bundle adjustment
+step7               = 0; % Bundle adjustment
 step8               = 0; % Resolve afine ambiguity
-step9               = 0; % Surface plot of complete model without ba
-step9b              = 0; % Surface plot of the bundle adjusted model
+step9               = 1; % Surface plot of complete model without ba
+step9b              = 1; % Surface plot of the bundle adjusted model
 
 % example plots
 plots               = 0; % Show example plot of the keypoints found
