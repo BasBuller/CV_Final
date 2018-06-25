@@ -58,8 +58,8 @@ for i = 1:total_inliers
 end
 
 F = fundamental_matrix(A);
-F = F / norm(F);
-if F(end) < 0
-    F = -F;
+% F = F / norm(F);
+% if F(end) < 0
+%     F = -F;
     
 end

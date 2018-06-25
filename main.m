@@ -34,7 +34,7 @@ step3_matlab        = 0; % Apply normalized 8-point RANSAC to find best matches 
 step4               = 0; % Determine point view matrix
 step5               = 0; % 3D coordinates for 3 and 4 consecutive images
 step6               = 0; % Procrustes analysis
-step7               = 1; % Bundle adjustment
+step7               = 0; % Bundle adjustment
 step8               = 0; % Surface plot of complete model
 
 % example plots
@@ -344,12 +344,14 @@ if(step6)
     load quad_models
 
     % Complete 3D model
-    [complete_model, colors, quad_order, triple_order] = model_stitching(triple_models, quad_models);
+    [complete_model, colors, quad_order, triple_order, updated_triple_models, updated_quad_models] = model_stitching(triple_models, quad_models);
 
     save complete_model complete_model
     save colors colors
     save triple_order triple_order
     save quad_order quad_order
+    save updated_triple_models updated_triple_models
+    save updated_quad_models updated_quad_models
 end
 
 

@@ -32,10 +32,8 @@ function cost = bundle_adjustment(complete_model)
         num_points = max(size(X_true));
         
         local_model = complete_model(:, prev_ind + 1: prev_ind + num_points);
+        prev_ind = prev_ind + num_points;
         diff = (X_true - M * local_model).^2;
         cost = cost + sum(sum(diff));
     end
-    
-    % Build V boolean matrix, to show which points of the projected
-    % complete model should be compared with original complete model
 end
