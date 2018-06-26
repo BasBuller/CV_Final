@@ -1,13 +1,17 @@
-function cost = ba_local(X0, model)
-    load triple_models triple_models
-
-    key_pts = triple_models{model, 4};
-    
+function cost = ba_local(X0, key_pts, model)
     % Split inputs
-    M = X0(:, 6);
-    S = X0(:, 7:end);
-    
-    % Cost 
+    if (model == 3)
+        M = X0(:, 1:6)';
+        S = X0(:, 7:end);
+    else
+        M = X0(:, 1:8)';
+        S = X0(:, 9:end);
+    end
+        
+    % Cost
+    cost = 0;
     error = key_pts - M*S;
-    cost = sum(sum(sqrt([error(1,:).^2 + error(2,:).^2; error(3,:).^2 + error(4,:).^2; error(5,:).^2 + error(6,:).^2])));
+    for i = 1:model
+        cost = cost + sum(sqrt(error((2*i-1), :).^2 + error(2*i, :).^2));
+    end
 end

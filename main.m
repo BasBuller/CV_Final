@@ -31,14 +31,15 @@ step1_vlsift        = 0; % Perform feature detection using vl_sift
 step2               = 0; % Perform feature matching
 step2_vlmatch       = 0; % Perform feature matching using vl_ubcmatch
 step3               = 0; % Apply normalized 8-point RANSAC to find best matches
-step3_matlab        = 0; % Apply normalized 8-point RANSAC to find best matches using MATLAB algorithm
-step4               = 0; % Determine point view matrix
-step5               = 0; % 3D coordinates for 3 and 4 consecutive images
-step6               = 0; % Procrustes analysis
-step7               = 0; % Bundle adjustment
-step8               = 0; % Resolve afine ambiguity
-step9               = 1; % Surface plot of complete model without ba
-step9b              = 1; % Surface plot of the bundle adjusted model
+step3_matlab        = 1; % Apply normalized 8-point RANSAC to find best matches using MATLAB algorithm
+step4               = 1; % Determine point view matrix
+step5               = 1; % 3D coordinates for 3 and 4 consecutive images
+step6               = 1; % Perform local bundle adjustment
+step7               = 1; % Procrustes analysis
+step8               = 1; % Global bundle adjustment
+step9               = 0; % Resolve afine ambiguity
+step10              = 1; % Surface plot of complete model without ba
+step10b             = 0; % Surface plot of the bundle adjusted model
 
 % example plots
 plots               = 0; % Show example plot of the keypoints found
@@ -340,6 +341,60 @@ end
 
 
 if(step6)
+%% Local bundle adjustment 
+    fprintf('Perform local bundle adjustment \n');
+    
+    load triple_models
+    load quad_models
+    
+    % Triple view models
+    for i = 1:max(size(triple_models))
+        if (triple_models{i, 5})
+            % Initialize parameters
+            S = triple_models{i, 1};
+            M = triple_models{i, 5}';
+            X0 = [M S];
+            key_pts = triple_models{i, 4};
+
+            % Perform local BA
+            options = optimoptions(@fminunc, 'Display', 'iter');
+            MS = fminunc(@(x)ba_local(x, key_pts, 3), X0, options);
+            M = MS(:, 1:6)';
+            S = MS(:, 7:end);
+
+            % Update models
+            triple_models(i, 1) = {S};
+            triple_models(i, 5) = {M};
+        end
+    end
+    
+    % Quad view models
+    for i = 1:max(size(quad_models))
+        if (quad_models{i, 5})
+            % Initialize parameters
+            S = quad_models{i, 1};
+            M = quad_models{i, 5}';
+            X0 = [M S];
+            key_pts = quad_models{i, 4};
+
+            % Perform local BA
+            options = optimoptions(@fminunc, 'Display', 'iter');
+            MS = fminunc(@(x)ba_local(x, key_pts, 4), X0, options);
+            M = MS(:, 1:8)';
+            S = MS(:, 9:end);
+
+            % Update models
+            quad_models(i, 1) = {S};
+            quad_models(i, 5) = {M};
+        end
+    end
+    
+    save triple_models
+    save quad_models
+end
+
+
+if(step7)
 %% Procrustes analysis for complete 3D model
     fprintf('Preform procrustes analysis to build complete 3D model \n');
 
@@ -358,9 +413,9 @@ if(step6)
 end
 
 
-if(step7)
-%% Bundle Adjustment 
-    fprintf('Perform bundle adjustment \n');
+if(step8)
+%% Global bundle adjustment 
+    fprintf('Perform global bundle adjustment \n');
 
     load complete_model
     load triple_models
@@ -385,7 +440,7 @@ if(step7)
 end
 
 
-if(step8)
+if(step9)
 %% Resolve afine ambiguity
     fprintf('Resolving afine ambiguity \n');
 
@@ -411,7 +466,7 @@ if(step8)
 end
     
 
-if(step9)
+if(step10)
 %% Surface plot of complete model
     fprintf('Build surface plot of the complete model without ba \n');
 
@@ -434,7 +489,7 @@ if(step9)
 end
 
 
-if(step9b)
+if(step10b)
 %% Surface plot of complete bundle adjusted model
     fprintf('Build surface plot of the bundle adjusted model \n');
 
