@@ -85,7 +85,7 @@ function [complete_model, color, quad_order, triple_order, updated_triple_models
     triple_order = triple_order(1:19);
     track_bottom = quad_order(1);
     
-    % Preassign cell array for uodated models
+    % Preassign cell array for updated models
      updated_triple_models = cell(max(size(triple_models)), 1);
      updated_quad_models = cell(max(size(quad_models)), 1);
      color = [];
@@ -128,7 +128,7 @@ function [complete_model, color, quad_order, triple_order, updated_triple_models
     
 %% Loop over remaining views
     % Loop over models to determine procrustes transforms, first fit three
-    % view to four view, next fir four view to three view.
+    % view to four view, next fit four view to three view.
     for i = 2:length(quad_order)
         % Assign temporary working variables 
         fprintf(strcat("Appending triple model ", num2str(triple_order(i)), " to quad model ", num2str(quad_order(i-1)),", direction: ",num2str(direction),"\n"))

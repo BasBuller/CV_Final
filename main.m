@@ -31,14 +31,15 @@ step1_vlsift        = 0; % Perform feature detection using vl_sift
 step2               = 0; % Perform feature matching
 step2_vlmatch       = 0; % Perform feature matching using vl_ubcmatch
 step3               = 0; % Apply normalized 8-point RANSAC to find best matches
-step3_matlab        = 1; % Apply normalized 8-point RANSAC to find best matches using MATLAB algorithm
+step3_matlab        = 0; % Apply normalized 8-point RANSAC to find best matches using MATLAB algorithm
 step4               = 1; % Determine point view matrix
 step5               = 1; % 3D coordinates for 3 and 4 consecutive images
 step6               = 1; % Perform local bundle adjustment
 step7               = 1; % Procrustes analysis
-step8               = 1; % Global bundle adjustment
+step8               = 0; % Global bundle adjustment
+step8b              = 0; % Refined global bundle adjustment
 step9               = 0; % Resolve afine ambiguity
-step10              = 1; % Surface plot of complete model without ba
+step10              = 0; % Surface plot of complete model without ba
 step10b             = 0; % Surface plot of the bundle adjusted model
 
 % example plots
@@ -437,6 +438,11 @@ if(step8)
     
     save M M
     save ba_model ba_model
+end
+
+
+if(step8b)
+%% Refined global bundle adjustment 
 end
 
 
