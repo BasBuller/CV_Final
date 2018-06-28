@@ -86,13 +86,13 @@ function [complete_model, color, quad_order, triple_order, updated_triple_models
     track_bottom = quad_order(1);
     
     % Preassign cell array for updated models
-     updated_triple_models = cell(max(size(triple_models)), 1);
-     updated_quad_models = cell(max(size(quad_models)), 1);
+     updated_triple_models = cell(max(size(triple_models)), 2);
+     updated_quad_models = cell(max(size(quad_models)), 2);
      color = [];
     
 %% Update first two views
     % First quad view model is not transformed
-    updated_quad_models(quad_order(1)) = {quad_models{quad_order(1), 1}};
+    updated_quad_models(quad_order(1), 1) = {quad_models{quad_order(1), 1}};
     direction = 1;
     % Assign temporary working variables
     quad = quad_models{quad_order(1), 1};
@@ -101,8 +101,7 @@ function [complete_model, color, quad_order, triple_order, updated_triple_models
     % Find matching points between three and four view models
     match_triple = triple_models{triple_order(1), 2};   
     match_quad = quad_models{quad_order(1), 2}(1:3, :);
-%     size(match_triple)
-%     size(match_quad)
+
     % save color values
     color_triple = triple_models{triple_order(1),3};
     color_quad = quad_models{quad_order(1),3};
@@ -118,7 +117,8 @@ function [complete_model, color, quad_order, triple_order, updated_triple_models
     
     % Apply transform to entire three view model and save in cell array
     new_triple = trans.b * triple' * trans.T + trans.c(1, :);
-    updated_triple_models(triple_order(1)) = {new_triple'};
+    updated_triple_models(triple_order(1), 1) = {new_triple'};
+    updated_triple_models(triple_order(1), 2) = {trans};
 
     
     % Final, complete 3D point model
@@ -158,7 +158,8 @@ function [complete_model, color, quad_order, triple_order, updated_triple_models
         
         
         % Save models
-        updated_triple_models(triple_order(i)) = {new_triple'};
+        updated_triple_models(triple_order(i), 1) = {new_triple'};
+        updated_triple_models(triple_order(i), 2) = {trans};
         complete_model = [complete_model new_triple'];
         color = [color; color_temp];
         
@@ -181,16 +182,17 @@ function [complete_model, color, quad_order, triple_order, updated_triple_models
                 end     
 
                 % Procrustes with matching points between three and four view
-                [~, new_quad,~ ] = procrustes( triple(:, IB)',quad');
+                [~, new_quad, trans_quad] = procrustes( triple(:, IB)',quad');
 
                 % Apply transform to entire quad view model and save in cell array
-                updated_quad_models(quad_order(i)) = {new_quad'};
+                updated_quad_models(quad_order(i), 1) = {new_quad'};
+                updated_quad_models(quad_order(i), 2) = {trans_quad};
 
             elseif ((quad_order(i)+1)==track_bottom) || (quad_order(i)==19 && triple_order(i)==1);
                 direction = 0;
                 three_index  = find(triple_order==track_bottom);
                 track_bottom = quad_order(i);
-                triple = updated_triple_models{triple_order(three_index)};
+                triple = updated_triple_models{triple_order(three_index), 1};
                 quad = quad_models{quad_order(i),1};
 
                 match_quad = quad_models{quad_order(i), 2}(2:4, :);
@@ -203,15 +205,16 @@ function [complete_model, color, quad_order, triple_order, updated_triple_models
                 end     
 
                 % Procrustes with matching points between three and four view
-                [~, new_quad,~ ] = procrustes( triple(:, IB)',quad');
+                [~, new_quad, trans_quad] = procrustes( triple(:, IB)',quad');
 
                 % Apply transform to entire quad view model and save in cell array
-                updated_quad_models(quad_order(i)) = {new_quad'};
+                updated_quad_models(quad_order(i), 1) = {new_quad'};
+                updated_quad_models(quad_order(i), 2) = {trans_quad};
 
             elseif (find(triple_order(1:i)==quad_order(i)))
                 direction = 1;
                 three_index = find(triple_order(1:i)==quad_order(i));
-                triple = updated_triple_models{triple_order(three_index)};
+                triple = updated_triple_models{triple_order(three_index), 1};
                 quad = quad_models{quad_order(i),1};
 
                 match_quad = quad_models{quad_order(i), 2}(1:3, :);
@@ -224,10 +227,11 @@ function [complete_model, color, quad_order, triple_order, updated_triple_models
                 end     
 
                 % Procrustes with matching points between three and four view
-                [~, new_quad,~ ] = procrustes( triple(:, IB)',quad');
+                [~, new_quad, trans_quad] = procrustes( triple(:, IB)',quad');
 
                 % Apply transform to entire quad view model and save in cell array
-                updated_quad_models(quad_order(i)) = {new_quad'}; 
+                updated_quad_models(quad_order(i), 1) = {new_quad'};
+                updated_quad_models(quad_order(i), 2) = {trans_quad};
             else
                 save temp
                 fprintf("Unknown scenaria for procrustes joining. \n")
