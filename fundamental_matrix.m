@@ -21,8 +21,4 @@ F = reshape(F,[3,3])';      % Transpose because reshape inserts elements as colu
 Df(3,3) = 0;                % Set smallest element to zero
      
 F = Uf * Df * Vf';
-
-% F = F / norm(F);
-% if F(end) < 0
-%   F = -F;
 end
