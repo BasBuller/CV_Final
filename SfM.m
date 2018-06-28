@@ -18,7 +18,7 @@
 function [models, skips] = SfM(keypoints, pvm, frames, skips)
 % Loop over all columns of the images matrix, such to cover all
 % combinations of 3 or 4 consecutive images
-models = cell(size(frames, 2), 5);
+models = cell(size(frames, 2), 6);
 
 for i = 1:size(frames, 2)
     % Determine the point coordinates to be used during SfM, results in
@@ -28,8 +28,15 @@ for i = 1:size(frames, 2)
     % Find columns of points that are not present in all consecutive images
     [~, col] = find(~match);
     
+    % Point tracks
+    track = pvm;
+    track(:, unique(col)) = [];
+    track = (track ~= 0);
+    models(i, 6) = {track};
+    
     % Remove columns with zeros
     match(:, unique(col)) = [];
+    
     pts = zeros(size(match, 1) * 2, size(match, 2));
     pts_n = zeros(size(match, 1) * 2, size(match, 2));
     
@@ -68,10 +75,10 @@ for i = 1:size(frames, 2)
 
         save('M', 'M');
     
-       % resolve affine ambiguity and solve for L
+        % resolve affine ambiguity and solve for L
         A           = M(1:2, :);
         L0          = pinv(A'*A);
-        options = optimoptions(@lsqnonlin, 'StepTolerance',1e-16,'OptimalityTolerance',1e-16,'FunctionTolerance',1e-16);
+        options     = optimoptions(@lsqnonlin, 'StepTolerance',1e-16,'OptimalityTolerance',1e-16,'FunctionTolerance',1e-16);
         L           = lsqnonlin(@residuals, L0,[],[],options);%ones(size(L0))*-1e-2,ones(size(L0))*1e-2,options);
     
         if sum(real(eig(L))<0)>0
@@ -80,10 +87,10 @@ for i = 1:size(frames, 2)
             save('temp.mat','U3','W3','V','V3','M','S','A','L0','L','pts')
             
         else
-       % Recover C
+        % Recover C
         C           = chol(L, 'lower');
        
-       % Update M and S
+        % Update M and S
         M           = M*C;
         S           = pinv(C)*S;
         end

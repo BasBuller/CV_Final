@@ -22,7 +22,7 @@ ransac_iters        = 25000;
 ransac_thresh_own   = 0.0015;
 ransac_thresh_mat   = 20;
 dot_size            = 15;
-max_iters_lsq       = 50;
+max_iters_ba        = 50;
  
 % switches per step
 step1               = 0; % Perform feature detection
@@ -34,12 +34,12 @@ step3               = 0; % Apply normalized 8-point RANSAC to find best matches
 step3_matlab        = 0; % Apply normalized 8-point RANSAC to find best matches using MATLAB algorithm
 step4               = 0; % Determine point view matrix
 step5               = 0; % 3D coordinates for 3 and 4 consecutive images
-step6               = 1; % Perform local bundle adjustment
-step7               = 1; % Procrustes analysis
+step6               = 0; % Perform local bundle adjustment
+step7               = 0; % Procrustes analysis
 step8               = 0; % Global bundle adjustment
-step8b              = 0; % Refined global bundle adjustment
+step8b              = 1; % Refined global bundle adjustment
 step9               = 0; % Resolve afine ambiguity
-step10              = 1; % Surface plot of complete model without ba
+step10              = 0; % Surface plot of complete model without ba
 step10b             = 0; % Surface plot of the bundle adjusted model
 
 % example plots
@@ -390,8 +390,8 @@ if(step6)
         end
     end
     
-    save triple_models
-    save quad_models
+    save triple_models triple_models
+    save quad_models quad_models
 end
 
 
@@ -428,13 +428,13 @@ if(step8)
     for i = 1:max(size(triple_models))
         M(:, (i-1)*6 + 1:i*6) = triple_models{i, 5}';
     end
-    X0 = [M, complete_model];
+    X0 = [M complete_model];
     
-    options = optimoptions(@fminunc, 'MaxIterations', max_iters_lsq, 'Display', 'iter');
+    options = optimoptions(@fminunc, 'MaxIterations', max_iters_ba, 'Display', 'iter');
     out = fminunc(@bundle_adjustment, X0, options);
     
-    M = X0(:, 1:max(size(triple_models))*6)';
-    ba_model = X0(:, (max(size(triple_models))*6 + 1):end);
+    M = out(:, 1:max(size(triple_models))*6)';
+    ba_model = out(:, (max(size(triple_models))*6 + 1):end);
     
     save M M
     save ba_model ba_model
@@ -442,7 +442,33 @@ end
 
 
 if(step8b)
-%% Refined global bundle adjustment 
+%% Refined global bundle adjustment
+    fprintf('Perform global bundle adjustment (refined version) \n');
+    
+    load complete_model
+    load triple_models
+    
+    % Build complete Motion matrix, take first 2 rows of each three view
+    % motion matrix to represent a single camera, 
+    % e.g. first two rows of first M ->  camera 1, etc...
+    % Assign individual motion matrices to the complete M matrix in
+    % increasing order, BA function takes care of specific order
+    M = zeros(3, max(size(triple_models))*2);
+    for i = 1:max(size(triple_models))
+        M(:, (2*i - 1):2*i) = triple_models{i, 5}(1:2, :)';
+    end
+    X0 = [M complete_model];
+    
+    % Perform bundle adjustment
+    options = optimoptions(@fminunc, 'MaxIterations', max_iters_ba, 'Display', 'iter');
+    out = fminunc(@ba_global, X0, options);
+    
+    % Split results into motion matrix and complete model
+    M = out(:, 1:max(size(triple_models))*2)';
+    ba_model = out(max(size(triple_models))*2+1:end);
+    
+    save M M
+    save ba_model ba_model
 end
 
 

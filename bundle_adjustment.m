@@ -27,7 +27,7 @@ function cost = bundle_adjustment(X0)
     
     % Split input
     M = X0(:, 1:max(size(triple_order))*6)';
-    complete_model = X0(:, (max(size(triple_order))+1):end);
+    complete_model = X0(:, (max(size(triple_order))*6+1):end);
     
     % Per three view model multiply corresponding motion matrix with 3D model keypoints
     for i = triple_order
