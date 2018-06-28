@@ -32,12 +32,13 @@ step2               = 0; % Perform feature matching
 step2_vlmatch       = 0; % Perform feature matching using vl_ubcmatch
 step3               = 0; % Apply normalized 8-point RANSAC to find best matches
 step3_matlab        = 0; % Apply normalized 8-point RANSAC to find best matches using MATLAB algorithm
-step4               = 1; % Determine point view matrix
-step5               = 1; % 3D coordinates for 3 and 4 consecutive images
+step4               = 0; % Determine point view matrix
+step5               = 0; % 3D coordinates for 3 and 4 consecutive images
 step6               = 0; % Perform local bundle adjustment
-step7               = 1; % Procrustes analysis
+step7               = 0; % Procrustes analysis
 step8               = 0; % Global bundle adjustment
 step8b              = 0; % Refined global bundle adjustment
+step8c              = 1; % Global bundle adjustment, but split into pieces
 step9               = 0; % Resolve afine ambiguity
 step10              = 0; % Surface plot of complete model without ba
 step10b             = 0; % Surface plot of the bundle adjusted model
@@ -468,6 +469,62 @@ if(step8b)
     ba_model = out(max(size(triple_models))*2+1:end);
     
     save M M
+    save ba_model ba_model
+end
+
+
+if(step8c)
+%% Global bundle adjustment split into pieces
+    fprintf('Perform global bundle adjustment split into pieces \n');
+    
+    load complete_model
+    load triple_models
+    load updated_triple_models
+    load triple_order
+    
+    % Pre assign variables
+    prev_ind = 0;
+    ba_model = zeros(size(complete_model));
+    
+    % Build complete M matrix
+    M = zeros(3, max(size(triple_models))*2);
+    for i = 1:max(size(triple_models))
+        M(:, (2*i - 1):2*i) = triple_models{i, 5}(1:2, :)';
+    end
+    
+    % Loop over complete model, based on three view models its made of
+    for i = triple_order
+        % Skip empty models
+        if (size(updated_triple_models{i, 1}))
+            
+            % Select number of points and its point track
+            n_pts = max(size(updated_triple_models{i, 1}));
+            point_track = triple_models{i, 6};
+            
+            key_pts = triple_models{i, 4};
+            
+            % Set input for BA
+            S_loc = complete_model(:, (prev_ind + 1):(prev_ind + n_pts));
+            X0 = [M, S_loc];
+            
+            % Perform BA
+            options = optimoptions(@fminunc, 'MaxIterations', max_iters_ba, 'Display', 'iter');
+            out = fminunc(@(x)ba_global_split(x, point_track, key_pts), X0, options);
+            
+            % Split output
+            M_new = out(:, 1:max(size(triple_models))*2)';
+            S_new = out(:, max(size(triple_models))*2+1:end);
+            
+            % Append results to new model
+            ba_model((prev_ind+1):(prev_ind+n_pts)) = S_new;
+            
+            % Increment previous index
+            prev_ind = prev_ind + n_pts;
+        else
+            continue;
+        end
+    end
+    
     save ba_model ba_model
 end
 

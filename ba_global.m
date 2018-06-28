@@ -49,7 +49,7 @@ function cost = ba_global(X0)
                 S_loc = S_loc(:, cols);
                 
                 % Select keypoints corresponding to D (= M*S)
-                D_loc = triple_models{i, 4}(1:2, cols);
+                D_loc = triple_models{j, 4}(1:2, cols);
                 
                 % Calculate error
                 E = D_loc - M_loc*S_loc;
