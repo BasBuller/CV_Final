@@ -32,7 +32,7 @@ for run = 1:N
     % Build A matrix
     A  = zeros(P,9);
     for i = 1:P
-        A(i,:) = [x2(seed(i))*x1(seed(i)) x2(seed(i))*y1(seed(i)) x2(seed(i)) y2(seed(i))*x1(seed(i)) y2(seed(i))*y1(seed(i)) y2(seed(i)) x1(seed(i)) y1(seed(i)) 1]; 
+        A(i,:) = [x2(seed(i))*x1(seed(i)), x2(seed(i))*y1(seed(i)), x2(seed(i)), y2(seed(i))*x1(seed(i)), y2(seed(i))*y1(seed(i)), y2(seed(i)) x1(seed(i)), y1(seed(i)), 1]; 
     end
     Fi = fundamental_matrix(A);              % Initial fundamental matrix
         
@@ -44,7 +44,7 @@ for run = 1:N
     % Sampson distance as inlier threshold
     num = sum((p2'*Fi)' .* p1, 1) .^ 2;                                             % Sampson distance numerator
     den = (Fp1(1,:)).^2 + (Fp1(2,:)).^2 + (FTp2(1,:)).^2 + (FTp2(2,:)).^2;          % Sampson distance denominator
-    inl     = find(num./den < threshold);
+    inl     = find(num./den <= threshold);
         
     if length(inl) > total_inliers
         total_inliers   = length(inl);
@@ -58,8 +58,5 @@ for i = 1:total_inliers
 end
 
 F = fundamental_matrix(A);
-% F = F / norm(F);
-% if F(end) < 0
-%     F = -F;
     
 end
