@@ -29,7 +29,7 @@ step1_robot         = 0; % Perform feature detection with external feature detec
 step2               = 0; % Perform feature matching using vl_ubcmatch
 step3               = 0; % Apply normalized 8-point RANSAC to find best matches
 step4               = 0; % Determine point view matrix
-step5               = 0; % 3D coordinates for 3 and 4 consecutive images
+step5               = 1; % 3D coordinates for 3 and 4 consecutive images
 step6               = 1; % Perform local bundle adjustment
 step7               = 1; % Procrustes analysis
 step8               = 1; % Surface plot of complete model
@@ -159,10 +159,9 @@ if(step3)
         [xn2,yn2,T2] = normalize_points(x2,y2);
         
         % apply 8 point ransac algorithm
-        [F, inliers] = fundamental_ransac(xn1,yn1,xn2,yn2,ransac_iters,ransac_thresh_own);
-        FRD = T2' * F * T1; 
+        [~, inliers] = fundamental_ransac(xn1,yn1,xn2,yn2,ransac_iters,ransac_thresh_own);
         matches(i, 2) = {inliers};
-        FM(i, 1) = {FRD};
+
         fprintf(strcat(num2str(length(find(inliers)))+" inliers found. \n"))
     end
     
@@ -178,15 +177,13 @@ if(step3)
     [xn2,yn2,T2] = normalize_points(x2,y2);
    
     % apply 8 point ransac algorithm
-    [F, inliers] = fundamental_ransac(xn1,yn1,xn2,yn2,ransac_iters,ransac_thresh_own);
-    FRD = T2' * F * T1; 
+    [~, inliers] = fundamental_ransac(xn1,yn1,xn2,yn2,ransac_iters,ransac_thresh_own);
     matches(num_im, 2) = {inliers};
-    FM(num_im, 1) = {FRD};
+
     fprintf(strcat(num2str(length(find(inliers)))+" inliers found. \n"))
     
     % save data
     save matches matches
-    save FM FM
 end
 
 
