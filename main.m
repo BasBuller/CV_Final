@@ -18,10 +18,8 @@ harris_scales       = 22; % determines how many scales the image is checked for
 harris_threshold    = 0.001;
 nearest_neighbour   = 0.80;
 ransac_iters        = 30000;
-ransac_thresh_own   = 0.0001;
-ransac_thresh_mat   = 20;
-dot_size            = 11;
-max_iters_ba        = 50;
+ransac_thresh       = 0.0001;
+dot_size            = 50;
  
 % switches per step
 step1               = 0; % Perform feature detection
@@ -29,16 +27,21 @@ step1_robot         = 0; % Perform feature detection with external feature detec
 step2               = 0; % Perform feature matching using vl_ubcmatch
 step3               = 0; % Apply normalized 8-point RANSAC to find best matches
 step4               = 0; % Determine point view matrix
-step5               = 1; % 3D coordinates for 3 and 4 consecutive images
-step6               = 1; % Perform local bundle adjustment
-step7               = 1; % Procrustes analysis
-step8               = 1; % Surface plot of complete model
+step5               = 0; % 3D coordinates for 3 and 4 consecutive images
+step6               = 0; % Perform local bundle adjustment
+step7               = 0; % Procrustes analysis
+step8               = 0; % Surface plot of complete model
 
 % example plots
+image_plot          = 3; % Which images are plotted, this number indicates the left image
+
+% Show epipolar lines
 plots               = 0; % Show example plot of the keypoints found
-image_plot          = 1; % Which images are plotted, this number indicates the left image
 keypts              = 0;
-eplns               = 1;
+eplns               = 0;
+
+% Show movement of keypoints
+matched_features    = 1;
 
 
 if(step1)
@@ -159,8 +162,10 @@ if(step3)
         [xn2,yn2,T2] = normalize_points(x2,y2);
         
         % apply 8 point ransac algorithm
-        [~, inliers] = fundamental_ransac(xn1,yn1,xn2,yn2,ransac_iters,ransac_thresh_own);
+        [F, inliers] = fundamental_ransac(xn1,yn1,xn2,yn2,ransac_iters,ransac_thresh);
         matches(i, 2) = {inliers};
+        F = T2' * F * T1;
+        FM(i, 1) = {F};
 
         fprintf(strcat(num2str(length(find(inliers)))+" inliers found. \n"))
     end
@@ -177,13 +182,16 @@ if(step3)
     [xn2,yn2,T2] = normalize_points(x2,y2);
    
     % apply 8 point ransac algorithm
-    [~, inliers] = fundamental_ransac(xn1,yn1,xn2,yn2,ransac_iters,ransac_thresh_own);
+    [F, inliers] = fundamental_ransac(xn1,yn1,xn2,yn2,ransac_iters,ransac_thresh);
     matches(num_im, 2) = {inliers};
+    F = T2' * F * T1;
+    FM(i, 1) = {F};
 
     fprintf(strcat(num2str(length(find(inliers)))+" inliers found. \n"))
     
     % save data
     save matches matches
+    save FM FM
 end
 
 
@@ -300,7 +308,7 @@ end
 
 if(step8)
 %% Surface plot of complete model
-    fprintf('Build surface plot of the complete model without ba \n');
+    fprintf('Build plot of the complete \n');
 
     load complete_model
     load colors
@@ -313,7 +321,7 @@ if(step8)
     castle = pointCloud([x' y' z']);
     castle.Color = colors;
 
-    denoised = pcdenoise(castle);
+    denoised = pcdenoise(castle, 'NumNeighbors', 50, 'Threshold', 0.0001);
     figure('Name','Original')
     pcshow(castle, 'MarkerSize', dot_size)
     figure('Name','Denoised')
@@ -342,7 +350,7 @@ if(plots)
         x1 = keypoints{image_plot, 2};
         y1 = keypoints{image_plot, 3};
         color = keypoints{image_plot, 6};
-        scatter(x1, y1, 10, color, '.')
+        scatter(x1, y1, 10, 'b' , '.')
     end
     
     % Plot epipolar lines
@@ -354,11 +362,30 @@ if(plots)
 end
 
 
-
-
-
-
-
+if(matched_features)
+%% Plot matched features on 2 consecutive images
+    fprintf('Plot matched features \n');
+    
+    load keypoints
+    load matches
+    
+    imgs = [1:19 1];
+    Im1 = imread(keypoints{imgs(image_plot), 1});
+    Im2 = imread(keypoints{imgs(image_plot+1), 1});
+    
+    correct_matches = matches{image_plot, 2};
+    
+    matched_points_1 = [keypoints{imgs(image_plot), 2}; keypoints{imgs(image_plot), 3}];
+    matched_points_1 = matched_points_1(:, matches{imgs(image_plot), 1}(1, correct_matches));
+    
+    matched_points_2 = [keypoints{imgs(image_plot+1), 2}; keypoints{imgs(image_plot+1), 3}];
+    matched_points_2 = matched_points_2(:, matches{image_plot, 1}(2, correct_matches));
+    
+    figure();
+    showMatchedFeatures(Im1, Im2, matched_points_1', matched_points_2') 
+    
+    saveas(gcf, 'images/RANSAC_matches.png');
+end
 
 
 
