@@ -15,30 +15,35 @@
 %   - Bas Buller 4166566
 %   - Rick Feith 4218272
 
-function cost = ba_global_split(X0, point_track, D_loc)
+function cost = ba_global_split(X0, point_track)
+
+    load keypoints keypoints
 
     % Pre assign variables
     cost = 0;
     
     % Split input
     M = X0(:, 1:size(point_track, 1)*2)';
-    S_loc = X0(:, (size(point_track)*2+1):end);
+    S = X0(:, (size(point_track, 1)*2+1):end);
     
     % Loop over rows of the sub model
-    for j = 1:size(point_track, 1)
-
+    for i = 1:size(point_track, 1)
+        
         % Select camera pose M
-        M_loc = M(2*j-1:2*j, :);
+        M_loc = M((2*i-1):2*i, :);
 
         % Select points from model that are visible in current
         % camera S
-        [~, cols] = find(point_track(j, :));
-        S_loc = S_loc(:, cols);
+        [~, cols] = find(point_track(i, :));
+        S_loc = S(:, cols);
         
-        % Setting up the correct D matrix is still somewhat hard
-        size(D_loc)
-        size(M_loc)
-        size(S_loc)
+        % Select reference 2D keypoints D_loc
+        key_points_cols = point_track(i, cols);
+        
+        X_loc = keypoints{i, 2};
+        Y_loc = keypoints{i, 3};
+        D_loc = [X_loc; Y_loc];
+        D_loc = D_loc(:, key_points_cols);
 
         % Calculate error  
         E = D_loc - M_loc*S_loc;

@@ -30,8 +30,7 @@ for i = 1:size(frames, 2)
     
     % Point tracks
     track = pvm;
-    track(:, unique(col)) = [];
-    track = (track ~= 0);
+    track(:, unique(col)) = [];    
     models(i, 6) = {track};
     
     % Remove columns with zeros

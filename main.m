@@ -32,16 +32,16 @@ step2               = 0; % Perform feature matching
 step2_vlmatch       = 0; % Perform feature matching using vl_ubcmatch
 step3               = 0; % Apply normalized 8-point RANSAC to find best matches
 step3_matlab        = 0; % Apply normalized 8-point RANSAC to find best matches using MATLAB algorithm
-step4               = 0; % Determine point view matrix
-step5               = 0; % 3D coordinates for 3 and 4 consecutive images
-step6               = 0; % Perform local bundle adjustment
-step7               = 0; % Procrustes analysis
+step4               = 1; % Determine point view matrix
+step5               = 1; % 3D coordinates for 3 and 4 consecutive images
+step6               = 1; % Perform local bundle adjustment
+step7               = 1; % Procrustes analysis
 step8               = 0; % Global bundle adjustment
 step8b              = 0; % Refined global bundle adjustment
-step8c              = 1; % Global bundle adjustment, but split into pieces
+step8c              = 0; % Global bundle adjustment, but split into pieces
 step9               = 0; % Resolve afine ambiguity
-step10              = 0; % Surface plot of complete model without ba
-step10b             = 0; % Surface plot of the bundle adjusted model
+step10              = 1; % Surface plot of complete model without GLOBAL ba
+step10b             = 0; % Surface plot of the GLOBAL bundle adjusted model
 
 % example plots
 plots               = 0; % Show example plot of the keypoints found
@@ -354,19 +354,19 @@ if(step6)
         if (triple_models{i, 5})
             % Initialize parameters
             S = triple_models{i, 1};
-            M = triple_models{i, 5}';
-            X0 = [M S];
+            M_loc = triple_models{i, 5}';
+            X0 = [M_loc S];
             key_pts = triple_models{i, 4};
 
             % Perform local BA
             options = optimoptions(@fminunc, 'Display', 'iter');
             MS = fminunc(@(x)ba_local(x, key_pts, 3), X0, options);
-            M = MS(:, 1:6)';
+            M_loc = MS(:, 1:6)';
             S = MS(:, 7:end);
 
             % Update models
             triple_models(i, 1) = {S};
-            triple_models(i, 5) = {M};
+            triple_models(i, 5) = {M_loc};
         end
     end
     
@@ -375,19 +375,19 @@ if(step6)
         if (quad_models{i, 5})
             % Initialize parameters
             S = quad_models{i, 1};
-            M = quad_models{i, 5}';
-            X0 = [M S];
+            M_loc = quad_models{i, 5}';
+            X0 = [M_loc S];
             key_pts = quad_models{i, 4};
 
             % Perform local BA
             options = optimoptions(@fminunc, 'Display', 'iter');
             MS = fminunc(@(x)ba_local(x, key_pts, 4), X0, options);
-            M = MS(:, 1:8)';
+            M_loc = MS(:, 1:8)';
             S = MS(:, 9:end);
 
             % Update models
             quad_models(i, 1) = {S};
-            quad_models(i, 5) = {M};
+            quad_models(i, 5) = {M_loc};
         end
     end
     
@@ -419,26 +419,51 @@ if(step8)
 %% Global bundle adjustment 
     fprintf('Perform global bundle adjustment \n');
 
-    load complete_model
+    load updated_triple_models
     load triple_models
+    load complete_model
     load triple_order
     
-    % Assign individual motion matrices to the complete M matrix in
-    % increasing order, BA function takes care of specific order
-    M = zeros(3, max(size(triple_models))*6);
-    for i = 1:max(size(triple_models))
-        M(:, (i-1)*6 + 1:i*6) = triple_models{i, 5}';
+    % Pre assign variables
+    prev_ind = 0;
+    ba_model = zeros(size(complete_model));
+    M = zeros(max(size(triple_models))*6, 3);
+    
+    % Triple view models
+    for i = 1:triple_order
+        % Skip empty models
+        if (size(updated_triple_models{i, 1}))
+            
+            % Select number of points and its point track
+            n_pts = max(size(updated_triple_models{i, 1}));
+            
+            % Correct M matrices for procrustes transform
+            trans = updated_triple_models{i, 2};
+            M_loc = triple_models{i, 5};
+            M_loc = trans.b * M_loc * trans.T + trans.c(6, :);            
+            
+            % Set input for BA
+            S_loc = complete_model(:, (prev_ind + 1):(prev_ind + n_pts));
+            X0 = [M_loc', S_loc];
+            key_pts = triple_models{i, 4};
+
+            % Perform local BA
+            options = optimoptions(@fminunc, 'Display', 'iter');
+            MS = fminunc(@(x)ba_local(x, key_pts, 3), X0, options);
+            M_loc = MS(:, 1:6)';
+            S = MS(:, 7:end);
+
+            % Update models
+            M((i-1)*6+1:i*6, :) = M_loc;
+            ba_model(:, (prev_ind+1):(prev_ind+n_pts)) = S;
+            
+            % Update previous index
+            prev_ind = prev_ind + n_pts;
+        end
     end
-    X0 = [M complete_model];
     
-    options = optimoptions(@fminunc, 'MaxIterations', max_iters_ba, 'Display', 'iter');
-    out = fminunc(@bundle_adjustment, X0, options);
-    
-    M = out(:, 1:max(size(triple_models))*6)';
-    ba_model = out(:, (max(size(triple_models))*6 + 1):end);
-    
-    save M M
     save ba_model ba_model
+    save M M
 end
 
 
@@ -454,21 +479,21 @@ if(step8b)
     % e.g. first two rows of first M ->  camera 1, etc...
     % Assign individual motion matrices to the complete M matrix in
     % increasing order, BA function takes care of specific order
-    M = zeros(3, max(size(triple_models))*2);
+    M_loc = zeros(3, max(size(triple_models))*2);
     for i = 1:max(size(triple_models))
-        M(:, (2*i - 1):2*i) = triple_models{i, 5}(1:2, :)';
+        M_loc(:, (2*i - 1):2*i) = triple_models{i, 5}(1:2, :)';
     end
-    X0 = [M complete_model];
+    X0 = [M_loc complete_model];
     
     % Perform bundle adjustment
     options = optimoptions(@fminunc, 'MaxIterations', max_iters_ba, 'Display', 'iter');
     out = fminunc(@ba_global, X0, options);
     
     % Split results into motion matrix and complete model
-    M = out(:, 1:max(size(triple_models))*2)';
+    M_loc = out(:, 1:max(size(triple_models))*2)';
     ba_model = out(max(size(triple_models))*2+1:end);
     
-    save M M
+    save M M_loc
     save ba_model ba_model
 end
 
@@ -487,9 +512,9 @@ if(step8c)
     ba_model = zeros(size(complete_model));
     
     % Build complete M matrix
-    M = zeros(3, max(size(triple_models))*2);
+    M_loc = zeros(3, max(size(triple_models))*2);
     for i = 1:max(size(triple_models))
-        M(:, (2*i - 1):2*i) = triple_models{i, 5}(1:2, :)';
+        M_loc(:, (2*i - 1):2*i) = triple_models{i, 5}(1:2, :)';
     end
     
     % Loop over complete model, based on three view models its made of
@@ -501,15 +526,13 @@ if(step8c)
             n_pts = max(size(updated_triple_models{i, 1}));
             point_track = triple_models{i, 6};
             
-            key_pts = triple_models{i, 4};
-            
             % Set input for BA
             S_loc = complete_model(:, (prev_ind + 1):(prev_ind + n_pts));
-            X0 = [M, S_loc];
+            X0 = [M_loc, S_loc];
             
             % Perform BA
             options = optimoptions(@fminunc, 'MaxIterations', max_iters_ba, 'Display', 'iter');
-            out = fminunc(@(x)ba_global_split(x, point_track, key_pts), X0, options);
+            out = fminunc(@(x)ba_global_split(x, point_track), X0, options);
             
             % Split output
             M_new = out(:, 1:max(size(triple_models))*2)';
@@ -533,10 +556,16 @@ if(step9)
 %% Resolve afine ambiguity
     fprintf('Resolving afine ambiguity \n');
 
-    load M
+    load triple_models
+    load complete_model
     load ba_model
     
     % Initial estimate
+    n_im = max(size(triple_models));
+    M = zeros(n_im*6, 3);
+    for i = 1:n_im
+        M((i-1)*6+1:i*6, :) = triple_models{i, 5};
+    end
     A = M(1:2, :);
     L0 = pinv(A' * A);
     
@@ -548,9 +577,11 @@ if(step9)
     
     % Update motion and structure matrices
     M = M * C;
+    complete_model = pinv(C) * complete_model;
     ba_model = pinv(C) * ba_model;
     
     save M M
+    save complete_model complete_model
     save ba_model ba_model
 end
     
