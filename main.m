@@ -15,10 +15,9 @@ close all; clear all; clc;
 
 %% Tunable parameters
 harris_scales       = 22; % determines how many scales the image is checked for
-harris_threshold    = 0.00005;
+harris_threshold    = 0.001;
 nearest_neighbour   = 0.80;
-sift_thresh         = 0.75;
-ransac_iters        = 25000;
+ransac_iters        = 30000;
 ransac_thresh_own   = 0.0001;
 ransac_thresh_mat   = 20;
 dot_size            = 11;
@@ -27,21 +26,13 @@ max_iters_ba        = 50;
 % switches per step
 step1               = 0; % Perform feature detection
 step1_robot         = 0; % Perform feature detection with external feature detector
-step1_vlsift        = 0; % Perform feature detection using vl_sift
-step2               = 0; % Perform feature matching
-step2_vlmatch       = 0; % Perform feature matching using vl_ubcmatch
+step2               = 0; % Perform feature matching using vl_ubcmatch
 step3               = 0; % Apply normalized 8-point RANSAC to find best matches
-step3_matlab        = 0; % Apply normalized 8-point RANSAC to find best matches using MATLAB algorithm
-step4               = 1; % Determine point view matrix
-step5               = 1; % 3D coordinates for 3 and 4 consecutive images
+step4               = 0; % Determine point view matrix
+step5               = 0; % 3D coordinates for 3 and 4 consecutive images
 step6               = 1; % Perform local bundle adjustment
 step7               = 1; % Procrustes analysis
-step8               = 0; % Global bundle adjustment
-step8b              = 0; % Refined global bundle adjustment
-step8c              = 0; % Global bundle adjustment, but split into pieces
-step9               = 0; % Resolve afine ambiguity
-step10              = 1; % Surface plot of complete model without GLOBAL ba
-step10b             = 0; % Surface plot of the GLOBAL bundle adjusted model
+step8               = 1; % Surface plot of complete model
 
 % example plots
 plots               = 0; % Show example plot of the keypoints found
@@ -92,7 +83,7 @@ if(step1_robot)
     % create complete data cell
     % | name | x | y | s | d | matches | vl_Sift matches | RANSAC matches
     keypoints = {};
-    folder_name = 'modelCastlePNG';
+    folder_name = 'modelCastle_features';
 
     % create list of images
     keypoints(:,1) = loaddata(folder_name);
@@ -119,63 +110,7 @@ if(step1_robot)
 end
 
 
-if(step1_vlsift)
-%% Step 1: create list of images, Detect feature points and create Sift descriptor using vl_sift only
-    fprintf('Perform featurepoint detection using vl_sift only \n');
-
-    % Create complete data cell
-    % | name | x | y | s | d | matches | vl_Sift matches | RANSAC matches
-    keypoints = {};
-    folder_name = 'modelCastlePNG';
-
-    % Create list of images
-    keypoints(:,1) = loaddata(folder_name);
-    fprintf("Files loaded into filenames \n")
-    
-    % Detect feature points and extract sift features
-    num_im = length(keypoints);
-    for i = 1:num_im
-        fprintf(strcat("Starting image ",num2str(i)," of ",num2str(num_im)," \n"))
-        [f,d] = vl_sift(single(rgb2gray(imread(keypoints{i,1}))),'PeakThresh',sift_thresh);  
-        keypoints(i,2) = {f(1,:)};
-        keypoints(i,3) = {f(2,:)};
-        keypoints(i,4) = {f(3,:)};
-        keypoints(i,5) = {d};
-        keypoints(i,6) = {impixel(imread(keypoints{i,1}),f(1,:),f(2,:))./255};
-        fprintf(strcat(num2str(length(f(1,:)))+" keypoints found. \n"))
-    end
-    
-    save keypoints keypoints
-end
-
-
 if(step2)
-%% step 2: Look for matches in feature points    
-    fprintf('Perform feature matching \n');
-    
-    load keypoints
-    num_im = size(keypoints,1);
-    matches   = {};
-    
-    % match each image with its consecutive image and write to data
-    for i = 1:(num_im-1)
-        fprintf(strcat("Started Matching on Image ", num2str(i)," \n"));
-        match = match_features(keypoints{i,2},keypoints{i,3},keypoints{i,5},keypoints{i+1,2},keypoints{i+1,3},keypoints{i+1,5},nearest_neighbour);
-        matches(i,1) = {match};
-        fprintf(strcat(num2str(length(match(1,:)))+" matches found. \n"))
-    end
-
-    % perform match between last and first image and write to data
-    fprintf(("Started matching on last image \n"));
-    match = match_features(keypoints{num_im,2},keypoints{num_im,3},keypoints{num_im,5},keypoints{1,2},keypoints{1,3},keypoints{1,5},nearest_neighbour);
-    matches(num_im,1) = {match};
-    fprintf(strcat(num2str(length(match(1,:)))+" matches found. \n"))
-    
-    save matches matches
-end
-
-
-if(step2_vlmatch)
 %% step 2: Look for matches in feature points using vl_ubcmatch
     fprintf('Perform feature matching using vl_ubcmatch \n');
    
@@ -213,7 +148,6 @@ if(step3)
     
     % Loop over all images except the last one
     for i = 1:(length(keypoints)-1)
-%     for i = 1:1
         fprintf(strcat("Starting on image: ", sprintf("%d", i), "\n"));
         
         % normalize data
@@ -247,54 +181,6 @@ if(step3)
     [F, inliers] = fundamental_ransac(xn1,yn1,xn2,yn2,ransac_iters,ransac_thresh_own);
     FRD = T2' * F * T1; 
     matches(num_im, 2) = {inliers};
-    FM(num_im, 1) = {FRD};
-    fprintf(strcat(num2str(length(find(inliers)))+" inliers found. \n"))
-    
-    % save data
-    save matches matches
-    save FM FM
-end
-
-
-if(step3_matlab)
-%% Step 3: Apply 8-points RANSAC algorithm using MATLAB fundamental matrix algorithm
-    fprintf('Apply 8-point RANSAC \n');
-    
-    load keypoints
-    load matches
-    num_im = size(keypoints,1);
-    FM = cell(num_im, 1);
-    
-    % Loop over all images except the last one
-    for i = 1:(num_im - 1)
-%     for i = 1:1
-        fprintf(strcat("Starting on image: ", sprintf("%d", i), "\n"));
-        
-        % normalize data
-        x1 = keypoints{i,2}(matches{i,1}(1,:));
-        y1 = keypoints{i,3}(matches{i,1}(1,:));
-        x2 = keypoints{i+1,2}(matches{i,1}(2,:));
-        y2 = keypoints{i+1,3}(matches{i,1}(2,:));
-        
-        % apply 8 point ransac algorithm
-        [FRD, inliers] = estimateFundamentalMatrix([x1',y1'],[x2',y2'],'method','RANSAC','NumTrials',ransac_iters,'DistanceThreshold',ransac_thresh_mat);
-        matches(i, 2) = {inliers'};
-        FM(i, 1) = {FRD};
-        fprintf(strcat(num2str(length(find(inliers)))+" inliers found. \n"))
-    end
-    
-    % Process last and first image
-    fprintf("Starting on last image \n");
-    
-    % normalize data
-    x1 = keypoints{num_im,2}(matches{num_im,1}(1,:));
-    y1 = keypoints{num_im,3}(matches{num_im,1}(1,:));
-    x2 = keypoints{1,2}(matches{num_im,1}(2,:));
-    y2 = keypoints{1,3}(matches{num_im,1}(2,:));
-   
-    % apply 8 point ransac algorithm 
-    [FRD, inliers] = estimateFundamentalMatrix([x1',y1'],[x2',y2'],'method','RANSAC','NumTrials',ransac_iters,'DistanceThreshold',ransac_thresh_mat);
-    matches(num_im, 2) = {inliers'};
     FM(num_im, 1) = {FRD};
     fprintf(strcat(num2str(length(find(inliers)))+" inliers found. \n"))
     
@@ -413,180 +299,9 @@ if(step7)
     save updated_triple_models updated_triple_models
     save updated_quad_models updated_quad_models
 end
-
+    
 
 if(step8)
-%% Global bundle adjustment 
-    fprintf('Perform global bundle adjustment \n');
-
-    load updated_triple_models
-    load triple_models
-    load complete_model
-    load triple_order
-    
-    % Pre assign variables
-    prev_ind = 0;
-    ba_model = zeros(size(complete_model));
-    M = zeros(max(size(triple_models))*6, 3);
-    
-    % Triple view models
-    for i = 1:triple_order
-        % Skip empty models
-        if (size(updated_triple_models{i, 1}))
-            
-            % Select number of points and its point track
-            n_pts = max(size(updated_triple_models{i, 1}));
-            
-            % Correct M matrices for procrustes transform
-            trans = updated_triple_models{i, 2};
-            M_loc = triple_models{i, 5};
-            M_loc = trans.b * M_loc * trans.T + trans.c(6, :);            
-            
-            % Set input for BA
-            S_loc = complete_model(:, (prev_ind + 1):(prev_ind + n_pts));
-            X0 = [M_loc', S_loc];
-            key_pts = triple_models{i, 4};
-
-            % Perform local BA
-            options = optimoptions(@fminunc, 'Display', 'iter');
-            MS = fminunc(@(x)ba_local(x, key_pts, 3), X0, options);
-            M_loc = MS(:, 1:6)';
-            S = MS(:, 7:end);
-
-            % Update models
-            M((i-1)*6+1:i*6, :) = M_loc;
-            ba_model(:, (prev_ind+1):(prev_ind+n_pts)) = S;
-            
-            % Update previous index
-            prev_ind = prev_ind + n_pts;
-        end
-    end
-    
-    save ba_model ba_model
-    save M M
-end
-
-
-if(step8b)
-%% Refined global bundle adjustment
-    fprintf('Perform global bundle adjustment (refined version) \n');
-    
-    load complete_model
-    load triple_models
-    
-    % Build complete Motion matrix, take first 2 rows of each three view
-    % motion matrix to represent a single camera, 
-    % e.g. first two rows of first M ->  camera 1, etc...
-    % Assign individual motion matrices to the complete M matrix in
-    % increasing order, BA function takes care of specific order
-    M_loc = zeros(3, max(size(triple_models))*2);
-    for i = 1:max(size(triple_models))
-        M_loc(:, (2*i - 1):2*i) = triple_models{i, 5}(1:2, :)';
-    end
-    X0 = [M_loc complete_model];
-    
-    % Perform bundle adjustment
-    options = optimoptions(@fminunc, 'MaxIterations', max_iters_ba, 'Display', 'iter');
-    out = fminunc(@ba_global, X0, options);
-    
-    % Split results into motion matrix and complete model
-    M_loc = out(:, 1:max(size(triple_models))*2)';
-    ba_model = out(max(size(triple_models))*2+1:end);
-    
-    save M M_loc
-    save ba_model ba_model
-end
-
-
-if(step8c)
-%% Global bundle adjustment split into pieces
-    fprintf('Perform global bundle adjustment split into pieces \n');
-    
-    load complete_model
-    load triple_models
-    load updated_triple_models
-    load triple_order
-    
-    % Pre assign variables
-    prev_ind = 0;
-    ba_model = zeros(size(complete_model));
-    
-    % Build complete M matrix
-    M_loc = zeros(3, max(size(triple_models))*2);
-    for i = 1:max(size(triple_models))
-        M_loc(:, (2*i - 1):2*i) = triple_models{i, 5}(1:2, :)';
-    end
-    
-    % Loop over complete model, based on three view models its made of
-    for i = triple_order
-        % Skip empty models
-        if (size(updated_triple_models{i, 1}))
-            
-            % Select number of points and its point track
-            n_pts = max(size(updated_triple_models{i, 1}));
-            point_track = triple_models{i, 6};
-            
-            % Set input for BA
-            S_loc = complete_model(:, (prev_ind + 1):(prev_ind + n_pts));
-            X0 = [M_loc, S_loc];
-            
-            % Perform BA
-            options = optimoptions(@fminunc, 'MaxIterations', max_iters_ba, 'Display', 'iter');
-            out = fminunc(@(x)ba_global_split(x, point_track), X0, options);
-            
-            % Split output
-            M_new = out(:, 1:max(size(triple_models))*2)';
-            S_new = out(:, max(size(triple_models))*2+1:end);
-            
-            % Append results to new model
-            ba_model((prev_ind+1):(prev_ind+n_pts)) = S_new;
-            
-            % Increment previous index
-            prev_ind = prev_ind + n_pts;
-        else
-            continue;
-        end
-    end
-    
-    save ba_model ba_model
-end
-
-
-if(step9)
-%% Resolve afine ambiguity
-    fprintf('Resolving afine ambiguity \n');
-
-    load triple_models
-    load complete_model
-    load ba_model
-    
-    % Initial estimate
-    n_im = max(size(triple_models));
-    M = zeros(n_im*6, 3);
-    for i = 1:n_im
-        M((i-1)*6+1:i*6, :) = triple_models{i, 5};
-    end
-    A = M(1:2, :);
-    L0 = pinv(A' * A);
-    
-    % Solve for L
-    L = lsqnonlin(@resolve_affine_ambiguity, L0);
-    
-    % Cholesky decomposition
-    C = chol(L, 'lower');
-    
-    % Update motion and structure matrices
-    M = M * C;
-    complete_model = pinv(C) * complete_model;
-    ba_model = pinv(C) * ba_model;
-    
-    save M M
-    save complete_model complete_model
-    save ba_model ba_model
-end
-    
-
-if(step10)
 %% Surface plot of complete model
     fprintf('Build surface plot of the complete model without ba \n');
 
@@ -597,29 +312,6 @@ if(step10)
     x = complete_model(1,:);
     y = complete_model(2,:);
     z = complete_model(3,:);
-    colors = uint8(colors.*255);
-    castle = pointCloud([x' y' z']);
-    castle.Color = colors;
-
-    denoised = pcdenoise(castle);
-    figure('Name','Original')
-    pcshow(castle, 'MarkerSize', dot_size)
-    figure('Name','Denoised')
-    pcshow(denoised, 'MarkerSize', dot_size)
-end
-
-
-if(step10b)
-%% Surface plot of complete bundle adjusted model
-    fprintf('Build surface plot of the bundle adjusted model \n');
-
-    load ba_model
-    load colors
-    
-    % Plot 3D scatter plot of the complete model
-    x = ba_model(1,:);
-    y = ba_model(2,:);
-    z = ba_model(3,:);
     colors = uint8(colors.*255);
     castle = pointCloud([x' y' z']);
     castle.Color = colors;
