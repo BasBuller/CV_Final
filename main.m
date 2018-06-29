@@ -17,16 +17,16 @@ clear all;
 harris_scales       = 22; % determines how many scales the image is checked for
 harris_threshold    = 0.00001;
 nearest_neighbour   = 0.80;
-sift_thresh         = 0.75;
+
 ransac_iters        = 30000;
-ransac_thresh       = 10;
+ransac_thresh       = 10^(-4);
 
 own_algorithm       = 0; % Use sift feature detection and matching (0) or own algorithm (1)      
 step1               = 0; % Perform feature detection
 step2               = 0; % Perform feature matching
 step3               = 0; % Apply normalized 8-point Ransac to find best matches
 step4               = 0; % Determine point view matrix
-step5               = 0; % 3D coordinates for 3 and 4 consecutive images
+step5               = 1; % 3D coordinates for 3 and 4 consecutive images
 step6               = 1; % Procrustes analysis
 step7               = 0; % Bundle adjustment
 step8               = 1; % Surface plot of complete model
@@ -38,7 +38,7 @@ if(step1)
     % create complete data cell
     % | name | x | y | s | d | matches | vl_Sift matches | RANSAC matches
     keypoints = {};
-    folder_name = 'modelCastlePNG';
+    folder_name = 'modelCastle_features';
 
     % create list of images
     keypoints(:,1) = loaddata(folder_name);
@@ -49,20 +49,20 @@ if(step1)
     for i = 1:num_of_im
         fprintf(strcat("Starting image ",num2str(i)," of ",num2str(num_of_im)," \n"))
 %         if(own_algorithm)
-            [s,r,c] = extractfeatures(keypoints{i,1},harris_scales,harris_threshold);
-            [x1 y1 a1 b1 c1 desc1 x2 y2 a2 b2 c2 desc2] = extract_features2(keypoints{i,1},1);
+%             [s,r,c] = extractfeatures(keypoints{i,1},harris_scales,harris_threshold);
+            [x1 y1 a1 b1 c1 desc1 x2 y2 a2 b2 c2 desc2] = extract_features2(keypoints{i,1},0);
             
 % %            create sift Descriptor
                 x = [];
                 y = [];
                 d = [];
-             [x,y,d] = sift_descriptor(keypoints{i,1},s,r,c);
+%              [x,y,d] = sift_descriptor(keypoints{i,1},s,r,c);
 %             keypoints(i,2) = {x};
 %             keypoints(i,3) = {y};a
 %             keypoints(i,4) = {s};
 %             keypoints(i,5) = {d};
 %             keypoints(i,6) = {impixel(imread(keypoints{i,1}),x,y)./255};
-            fprintf(strcat(num2str(length(x))+" keypoints found with own algorithm. \n"))
+%             fprintf(strcat(num2str(length(x))+" keypoints found with own algorithm. \n"))
             x = [x x1' x2'];
             y = [y y1' y2'];
             keypoints(i,2) = {x};
@@ -148,9 +148,9 @@ if(step3)
         [xn1,yn1,T1] = normalize_points(x1,y1);
         [xn2,yn2,T2] = normalize_points(x2,y2);
       % apply 8 point ransac algorithm
-%       [F, inliers] = fundamental_ransac(xn1,yn1,xn2,yn2,ransac_iters,ransac_thresh);
-%       FRD = T2' * F * T1; 
-        [FRD, inliers] = estimateFundamentalMatrix([x1',y1'],[x2',y2'],'method','RANSAC','NumTrials',ransac_iters,'DistanceThreshold',ransac_thresh);
+      [F, inliers] = fundamental_ransac(xn1,yn1,xn2,yn2,ransac_iters,ransac_thresh);
+      FRD = T2' * F * T1; 
+%         [FRD, inliers] = estimateFundamentalMatrix([x1',y1'],[x2',y2'],'method','RANSAC','NumTrials',ransac_iters,'DistanceThreshold',ransac_thresh);
         matches{i,2} = inliers';
         fprintf(strcat(num2str(length(find(inliers)))+" inliers found. \n"))
     end
@@ -164,9 +164,9 @@ if(step3)
         [xn2,yn2,T2] = normalize_points(x2,y2);
    
         % apply 8 point ransac algorithm
-%       [F, inliers] = fundamental_ransac(xn1,yn1,xn2,yn2,ransac_iters,ransac_thresh);
-%       FRD = T2' * F * T1; 
-        [FRD, inliers] = estimateFundamentalMatrix([x1',y1'],[x2',y2'],'method','RANSAC','NumTrials',ransac_iters,'DistanceThreshold',ransac_thresh);
+      [F, inliers] = fundamental_ransac(xn1,yn1,xn2,yn2,ransac_iters,ransac_thresh);
+      FRD = T2' * F * T1; 
+%         [FRD, inliers] = estimateFundamentalMatrix([x1',y1'],[x2',y2'],'method','RANSAC','NumTrials',ransac_iters,'DistanceThreshold',ransac_thresh);
         matches{19, 2} = inliers';
         fprintf(strcat(num2str(length(find(inliers)))+" inliers found. \n"))
         % save data
@@ -368,10 +368,10 @@ z = complete_model(3,:);
 colors = uint8(colors.*255);
 castle = pointCloud([x' y' z']);
 castle.Color = colors;
-figure()
-pcshow(castle)
+% figure()
+% pcshow(castle)
 
-[denoised1,inliers] = pcdenoise(castle,'NumNeighbors',50,'Threshold',0.001);
+[denoised1,inliers] = pcdenoise(castle,'NumNeighbors',50,'Threshold',0.0001);
 
 
 
@@ -410,20 +410,73 @@ newPoints =Rz* Ry * Rx * [-x1; y1; z1];
 
 castle2 = pointCloud(newPoints');
 castle2.Color = colors(inliers,:);
-figure()
-pcshow(denoised1)
+% figure()
+% pcshow(denoised1)
 figure('Name','Castle2')
 pcshow(castle2,'MarkerSize',50)
-
-
 xyz = castle2.Location;
 x = xyz(:,1);
 y = xyz(:,2);
 z = xyz(:,3);
 
+%normalize
+% maxX = max(x)-min(x);
+% maxY = max(y)-min(y);
+% maxZ = max(z)-min(z);
 % 
+% scaling = max([maxX,maxY,maxZ]);
+% 
+% x = x./scaling;
+% y = y./scaling;
+% z = z./scaling;
+% 
+% xyz = [x y z];
+% save complete xyz
+
+triangles = [];
+for i = 1:length(x)
+    [ind] = findNearestNeighbors(castle2,castle2.Location(i,:),5);
+    triangles = [triangles; i ind(2:3)'; i ind(4:5)'];
+end
+
+% tri = boundary(x,y,z,1);
+% colormap(colors_denoised./255)
+[~,S]  =alphavol(xyz,25);
+% 
+% orange=[];
+% gray = [];
+% green = [];
+% yellow = [];
+% 
+% for i = 1: length(x)
+%     item = colors_denoised(i,:);
+%     if (item(1) >150 && item(2) >140 )
+%         orange = [orange i];
+%     elseif (item(3)> 140)
+%         green =[green i];
+%     elseif (item(1)<80 && item(2)<80 && item(3)<80)
+%         gray = [gray i];
+% 
+%     else
+%         yellow =[yellow i];
+%     end
+% end
+    
+
+
+figure()
+trisurf(triangles,x,y,z,1:length(x),'LineStyle','none')
+colormap(colors_denoised./255)
+
+
+figure()
+trisurf(S.bnd,x,y,z,(1:length(x)),'LineStyle','none')
+
+colormap(colors_denoised./255)
+
+
 % [xi,yi] = meshgrid(min(x):0.5:max(x),min(y):0.5:max(y));
-% 
+
 % Zint = scatteredInterpolant(x,y,z,'natural','none');
 % 
 % Rint = scatteredInterpolant(x,y,z,colors_denoised(:,1),'nearest','none');
@@ -440,25 +493,22 @@ z = xyz(:,3);
 %  B = Bint(xi,yi,zi);
 %  fprintf("G is done \n")
 %  G = Gint(xi,yi,zi);
-%  fprintf("B is done \n")tstR(:) G(:) B(:)]);
+%  fprintf("B is done \n")
+%  castle3 = pointCloud([xi(:),yi(:),zi(:)]);
+%  castle3.Color = uint8([R(:) G(:) B(:)]);
 %  figure()
 %  pcshow(castle3)
  
  
-x = x - min(x);
-y = y - min(y);
-z = z -min(z);
-model = zeros(ceil(max(y)),ceil(max(x)));
-for i = 1: length(x)
-    model(round(y(i))+1,round(x(i))+1) = z(i);
-    
-end
+% x = x - min(x);
+% y = y - min(y);
+% z = z -min(z);
+% model = zeros(ceil(max(y)),ceil(max(x)));
+% for i = 1: length(x)
+%     model(round(y(i))+1,round(x(i))+1) = z(i);
+%     
+% end
 
-
-% tri = delaunay(x,y);
-% trisurf(tri,x,y,z)
-% figure()
-% surf(X,Y,model)
 end
 
 

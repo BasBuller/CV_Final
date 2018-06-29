@@ -16,7 +16,7 @@ function F = fundamental_matrix(A)
 [~, ~, V] = svd(A);
 F = V(:,end);               % Last column corresponds to column of smallest value in D, MATLAB puts singular values in decreasing order
 
-F = reshape(F,[3,3]);
+F = reshape(F,[3,3])';
 [Uf,Df,Vf] = svd(F);
 Df(3,3) = 0;                % Set smallest element to zero
      
