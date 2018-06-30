@@ -27,7 +27,7 @@ function [complete_model, color, quad_order, triple_order, updated_triple_models
         end
     end
 
-
+    % function that sets next model to be processed
     sign = 0;
     function [top, bottom] = set_top_bottom(ind,sign,top,bottom)
     if sign == 0
@@ -56,7 +56,7 @@ function [complete_model, color, quad_order, triple_order, updated_triple_models
     end
     end
 
-    
+    %% create array that gives the model order from largest size to smallest size
     [top,bottom]  =set_top_bottom(ind,sign,0,0);
     quad_order = [quad_order ind];
     triple_order = [triple_order ind top];

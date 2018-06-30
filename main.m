@@ -15,21 +15,23 @@ close all; clear all; clc;
 
 %% Tunable parameters
 harris_scales       = 22; % determines how many scales the image is checked for
-harris_threshold    = 0.001;
+harris_threshold    = 0.000001;
 nearest_neighbour   = 0.80;
 ransac_iters        = 30000;
-ransac_thresh       = 0.0001;
+ransac_thresh_own   = 0.0001;
+ransac_thresh_mat   = 20;
 dot_size            = 50;
+
  
 % switches per step
-step1               = 0; % Perform feature detection
+step1               = 0; % Perform feature detection (WARNING: takes a long time)
 step1_robot         = 0; % Perform feature detection with external feature detector
-step2               = 0; % Perform feature matching using vl_ubcmatch
-step3               = 0; % Apply normalized 8-point RANSAC to find best matches
+step2               = 0; % Perform feature matching using vl_ubcmatch (WARNING: takes a long time)
+step3               = 0; % Apply normalized 8-point RANSAC to find best matches (WARNING: takes a long time)
 step4               = 0; % Determine point view matrix
 step5               = 0; % 3D coordinates for 3 and 4 consecutive images
-step6               = 1; % Perform local bundle adjustment
-step7               = 1; % Procrustes analysis
+step6               = 0; % Perform local bundle adjustment
+step7               = 0; % Procrustes analysis
 step8               = 1; % Surface plot of complete model
 
 % example plots
@@ -37,7 +39,8 @@ image_plot          = 3; % Which images are plotted, this number indicates the l
 
 % Show epipolar lines
 plots               = 0; % Show example plot of the keypoints found
-keypts              = 0;
+image_plot          = 1; % Which images are plotted, this number indicates the left image
+keypts              = 1;
 eplns               = 0;
 
 % Show movement of keypoints
@@ -308,24 +311,51 @@ end
 
 if(step8)
 %% Surface plot of complete model
-    fprintf('Build plot of the complete \n');
+    fprintf('Build plot of the complete model\n');
 
     load complete_model
     load colors
     
     % Plot 3D scatter plot of the complete model
-    x = complete_model(1,:);
+    x = -complete_model(1,:);
     y = complete_model(2,:);
     z = complete_model(3,:);
+    
+    % rotate model so it is displayed correctly
+    theta = pi/4+0.1;
+    phi = pi/8;
+    Rx = [1 0 0; 0 cos(theta) -sin(theta); 0 sin(theta) cos(theta)];
+    Ry = [cos(phi) 0 sin(phi); 0 1 0; -sin(phi) 0 cos(phi)];
+    
+    xyz = Ry*Rx*[x;y;z];
+    x = xyz(1,:);
+    y = xyz(2,:);
+    z = xyz(3,:);
+    
+    % add colors and create pointcloud
     colors = uint8(colors.*255);
     castle = pointCloud([x' y' z']);
     castle.Color = colors;
-
-    denoised = pcdenoise(castle, 'NumNeighbors', 50, 'Threshold', 0.0001);
-    figure('Name','Original')
-    pcshow(castle, 'MarkerSize', dot_size)
+    
+    % apply filter that removes outliers
+    denoised = pcdenoise(castle,'NumNeighbors',500,'Threshold',0.0001);
+   
+    % plot figure
     figure('Name','Denoised')
     pcshow(denoised, 'MarkerSize', dot_size)
+    
+    % create data for triangulation
+    xyz = denoised.Location;
+    x = xyz(:,1);
+    y = xyz(:,2);
+    z = xyz(:,3);
+    
+    [~,S] = alphavol(xyz,15);
+    colors = double(denoised.Color);
+    figure()
+    trisurf(S.bnd,x,y,z,(1:length(x)),'LineStyle','none');
+    colormap((colors)./255)
+
 end
 
 
@@ -335,14 +365,14 @@ if(plots)
     
     load keypoints
     load matches
-    load FM
+%     load FM
     
     figure('name', strcat('image_', sprintf('%d', image_plot)));
 
     imgs = [1:19 1];
     Im1 = imread(keypoints{imgs(image_plot), 1});
     Im2 = imread(keypoints{imgs(image_plot+1), 1});
-    imshow(Im2);
+    imshow(Im1);
     hold on
     
     % Plot keypoints
@@ -350,7 +380,7 @@ if(plots)
         x1 = keypoints{image_plot, 2};
         y1 = keypoints{image_plot, 3};
         color = keypoints{image_plot, 6};
-        scatter(x1, y1, 10, 'b' , '.')
+        scatter(x1, y1, 10, 'b', '.')
     end
     
     % Plot epipolar lines
