@@ -28,9 +28,9 @@ step2               = 0; % Perform feature matching using vl_ubcmatch
 step3               = 0; % Apply normalized 8-point RANSAC to find best matches
 step4               = 0; % Determine point view matrix
 step5               = 0; % 3D coordinates for 3 and 4 consecutive images
-step6               = 0; % Perform local bundle adjustment
-step7               = 0; % Procrustes analysis
-step8               = 0; % Surface plot of complete model
+step6               = 1; % Perform local bundle adjustment
+step7               = 1; % Procrustes analysis
+step8               = 1; % Surface plot of complete model
 
 % example plots
 image_plot          = 3; % Which images are plotted, this number indicates the left image
@@ -41,7 +41,7 @@ keypts              = 0;
 eplns               = 0;
 
 % Show movement of keypoints
-matched_features    = 1;
+matched_features    = 0;
 
 
 if(step1)

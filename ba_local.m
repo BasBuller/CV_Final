@@ -30,6 +30,6 @@ function cost = ba_local(X0, key_pts, type)
     cost = 0;
     error = key_pts - M*S;
     for i = 1:type
-        cost = cost + sum(sqrt(error((2*i-1), :).^2 + error(2*i, :).^2));
+        cost = cost + sum(error((2*i-1), :).^2 + error(2*i, :).^2);
     end
 end
