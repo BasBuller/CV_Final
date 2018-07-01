@@ -12,6 +12,23 @@
 
 close all; clear all; clc;
 
+%% NOTES
+% The script is structured in separate sections, indicates as steps 1 to 8.
+% Each step can be turned on and off with the switches in the tunable
+% parameters section. This section also contains several parameters we used
+% to come to our final results.
+%
+% Intermediate results of each section are saved in specific .m files,
+% which are accompanied in a second .zip file. The final model we produced
+% is quite big due to a large amount of keypoints. Due to this certain
+% sections took quite long (couple of hours) to execute. These sections are
+% indicated with a WARNING comment behind their description. Each section
+% should run fine with the supplied .mat files.
+%
+% When running the entire algorithm on e.g. the reference keypoints from
+% brightspace it should run in a reasonable time and should be executable
+% on any average laptop.
+
 
 %% Tunable parameters
 harris_scales       = 22; % determines how many scales the image is checked for
@@ -30,7 +47,7 @@ step2               = 0; % Perform feature matching using vl_ubcmatch (WARNING: 
 step3               = 0; % Apply normalized 8-point RANSAC to find best matches (WARNING: takes a long time)
 step4               = 0; % Determine point view matrix
 step5               = 0; % 3D coordinates for 3 and 4 consecutive images
-step6               = 0; % Perform local bundle adjustment
+step6               = 0; % Perform local bundle adjustment (WARNING: takes a long time and requires a lot of memory)
 step7               = 0; % Procrustes analysis
 step8               = 1; % Surface plot of complete model
 
@@ -365,7 +382,6 @@ if(plots)
     
     load keypoints
     load matches
-%     load FM
     
     figure('name', strcat('image_', sprintf('%d', image_plot)));
 

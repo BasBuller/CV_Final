@@ -10,6 +10,11 @@
 % Output:
 %   -   complete_model  = complete 3D model
 %   -   color           = colors of points in 3d model in normalized rgb.
+%   -   quad_order, triple_order = order in which the respective models are
+%                                  stitched together
+%   -   updated_triple_models, updated_quad_models = update of the points
+%           of the sub models that actually were appended to the complete model
+%
 % Authors: 
 %   - Bas Buller 4166566
 %   - Rick Feith 4218272

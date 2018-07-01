@@ -17,13 +17,17 @@
 %   - Rick Feith 4218272
 
 function [xn,yn,T] = normalize_points(xi,yi)
+
+% determine mean values
 mx = 1/max(size(xi)) * sum(xi);
 my = 1/max(size(yi)) * sum(yi);
 d = 1/max(size(xi))* sum(sqrt((xi-mx).^2 + (yi-my).^2));
 
+% determine transform and apply to the keypoints
 T = [sqrt(2)/d 0 -mx*sqrt(2)/d; 0 sqrt(2)/d -my*sqrt(2)/d; 0 0 1];
 p = T * [xi; yi; ones(size(xi))];
 
+% separate x and y
 xn= p(1,:);
 yn = p(2,:);
 

@@ -1,3 +1,20 @@
+% ImageDerivatives.m
+%
+% Determines the specified derivative of a Gaussian filter applied to an
+% image
+%
+% Input:
+%   - img: image filter will be applied to
+%   - sigma_x, sigma_x: sigma values for the filter in x and y direction
+%   - type: order of the derivative
+%
+% Output:
+%   - F: filtered image
+%
+% Authors: 
+%   - Bas Buller 4166566
+%   - Rick Feith 4218272
+
 function F = ImageDerivatives(img, sigma_x,sigma_y, type)
 if type == 'xx'
     x = -3*sigma_x:3*sigma_x;

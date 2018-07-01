@@ -1,5 +1,7 @@
-%% Determine x and y location of feature points using Harris corner detection
-% This function finds Harris corners at integration-scale sigma.
+% harris.m
+%
+% This function finds Harris corners x and y coordinates at integration-scale sigma.
+%
 % Input: 
 %   -im: imagename
 %   -sigma: sigma integration-scale
@@ -12,8 +14,6 @@
 % Authors: 
 %   -Bas Buller 4166566
 %   -Rick Feith 4218272
-
-
 
 function [r, c] = harris(im, sigma,Rthreshold)
 
@@ -49,11 +49,6 @@ threshold = Rthreshold * max(max(R));
 % Also checks if R is above threshold
 R = ((R>threshold) & ((imdilate(R, strel('square', 3))==R)));%.* sigma;
 
-% Display corners
-% figure
-% imshow(R,[]);
-
 % Return the coordinates
 [r,c] = find(R);
-% size(r),size(c)
 end

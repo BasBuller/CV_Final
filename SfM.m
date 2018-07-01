@@ -4,12 +4,15 @@
 % several images.
 %
 % Input:
-%   -   keypoints = keypoint coordinates for the respective images
-%   -   pvm = point view matrix for the respective images
-%   -   images = consecutive images used
+%   -   keypoints: keypoint coordinates for the respective images
+%   -   pvm: point view matrix for the respective images
+%   -   frames: order of the frames/images
+%   -   skips: number of skips for non positive definite C matrices of
+%               previous iterations
 %
 % Output:
-%   -   S = 3D Graph of the tracked points
+%   -   models = 3D sub models
+%   -   skips = total number of skips up until current iteration
 %
 % Authors: 
 %   - Bas Buller 4166566

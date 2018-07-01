@@ -1,15 +1,17 @@
-%% Determine matching cornerpoints between 2 images
+% match_features.m
+%
+% Determine matching cornerpoints between 2 images
+%
 % Input: 
-%   -x1,y1,x2,y2: x and y coordinates belonging to the cornerpoints of
+%   -xa,ya,xb,yb: x and y coordinates belonging to the cornerpoints of
 %   image 1 and 2
-%   -d1,d2: sift descriptors of image 1 and 2
+%   -da,db: sift descriptors of image 1 and 2
 %   -nn_threshold: threshold for determining if match is correctusing
 %   nearest neighbour 
 %
 % Output: 
 %   -match: index of matching cornerpoint in image 1 and 2
 %   
-%
 % Requires harris.m
 %
 % Authors: 
@@ -32,6 +34,7 @@ distR = min_dist(:,1)./min_dist(:,2);
 
 % check if nearest neighbour above threshold
 distR(distR>0.8) = 0;
+
 %return indices
 match1 = find(distR);
 match2 = min_dist_ind(distR>0,1);

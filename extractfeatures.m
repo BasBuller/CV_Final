@@ -1,7 +1,8 @@
-%% Determine sigma, r and c of feature points using normalized Harris corner detection
-% extract location of feature points
+% extractfeatures.m
+%
 % Input: 
 %   -img: imagename
+%   -loops: number of bins in the gaussian filter
 %
 % Output: 
 %   -r,c: row and column of cornerpoints
@@ -55,7 +56,6 @@ for i = 1:1:loops
     sigma = sigmarange(i);
     s(finalBlock==Ls(:,:,i)&(Ls(:,:,i)~=0))=sigma;
 end
-
 
 [r,c] = find(finalClean);
 end
