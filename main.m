@@ -39,16 +39,16 @@ ransac_thresh_own   = 0.0001;
 ransac_thresh_mat   = 20;
 dot_size            = 50;
 
- 
 % switches per step
-step1               = 0; % Perform feature detection (WARNING: takes a long time)
-step1_robot         = 0; % Perform feature detection with external feature detector
+step1               = 0; % Perform feature detection with both detectors combined (WARNING: takes a long time)
+step1_own           = 0 ;% Use own algorithm (can be combined with step1_robot)
+step1_robot         = 0; % Perform feature detection with external feature detector (can be combines with step1_own)
 step2               = 0; % Perform feature matching using vl_ubcmatch (WARNING: takes a long time)
 step3               = 0; % Apply normalized 8-point RANSAC to find best matches (WARNING: takes a long time)
-step4               = 0; % Determine point view matrix
-step5               = 0; % 3D coordinates for 3 and 4 consecutive images
-step6               = 0; % Perform local bundle adjustment (WARNING: takes a long time and requires a lot of memory)
-step7               = 0; % Procrustes analysis
+step4               = 1; % Determine point view matrix
+step5               = 1; % 3D coordinates for 3 and 4 consecutive images
+step6               = 1; % Perform local bundle adjustment
+step7               = 1; % Procrustes analysis
 step8               = 1; % Surface plot of complete model
 
 % example plots
@@ -71,7 +71,7 @@ if(step1)
     % Create complete data cell
     % | name | x | y | s | d | matches | vl_Sift matches | RANSAC matches
     keypoints = {};
-    folder_name = 'modelCastlePNG';
+    folder_name = 'modelCastle_features';
 
     % Create list of images
     keypoints(:,1) = loaddata(folder_name);
@@ -79,12 +79,26 @@ if(step1)
     
     % Detect feature points and extract sift features
     num_im = length(keypoints);
-    for i = 1:num_im
+    for i = 1:2
         fprintf(strcat("Starting image ",num2str(i)," of ",num2str(num_im)," \n"))
-        [s,r,c] = extractfeatures(keypoints{i,1}, harris_scales, harris_threshold);
-            
-        % Create sift Descriptor
-        [x,y,d] = sift_descriptor(keypoints{i,1},s,r,c);
+        x = []; x1 = []; x2 = [];
+        y = []; y1 = []; y2 = [];
+        d = []; d1 = []; d2 = [];
+        s = [];
+        if(step1_own)
+            [s,r,c] = extractfeatures(keypoints{i,1}, harris_scales, harris_threshold);
+
+            % Create sift Descriptor
+            [x,y,d] = sift_descriptor(keypoints{i,1},s,r,c);
+        end
+        
+        if (step1_robot)
+            [x1 y1 a1 b1 c1 d1 x2 y2 a2 b2 c2 d2] = extract_features2(keypoints{i,1},0);
+        end
+        x = [x x1' x2'];
+        y = [y y1' y2'];
+        d = [d d1' d2'];
+        
         keypoints(i,2) = {x};
         keypoints(i,3) = {y};
         keypoints(i,4) = {s};
@@ -93,40 +107,6 @@ if(step1)
         
         % Print progression
         fprintf(strcat(num2str(length(x))+" keypoints found. \n"));
-    end
-    
-    save keypoints keypoints
-end
-
-
-if(step1_robot)
-%% Step 1: create list of images, Detect feature points and create Sift descriptor using robot script
-    fprintf('Perform feature point detection using robot script \n');
-
-    % create complete data cell
-    % | name | x | y | s | d | matches | vl_Sift matches | RANSAC matches
-    keypoints = {};
-    folder_name = 'modelCastle_features';
-
-    % create list of images
-    keypoints(:,1) = loaddata(folder_name);
-    fprintf("Files loaded into filenames \n")
-    
-    % Detect feature points and extract sift features
-    num_im = length(keypoints);
-    for i = 1:num_im
-        fprintf(strcat("Starting image ",num2str(i)," of ",num2str(num_im)," \n"))
-        [x1 y1 a1 b1 c1 desc1 x2 y2 a2 b2 c2 desc2] = extract_features2(keypoints{i,1},0);
-            
-        %create sift Descriptor
-        x = [x1' x2'];
-        y = [y1' y2'];
-        keypoints(i,2) = {x};
-        keypoints(i,3) = {y};
-        keypoints(i,4) = {[a1' b1' c1']};
-        keypoints(i,5) = {[desc1' desc2']};
-        keypoints(i,6) = {impixel(imread(keypoints{i,1}),x,y)./255};
-        fprintf(strcat(num2str(length([x1' x2']))+" keypoints found. \n"))
     end
     
     save keypoints keypoints
